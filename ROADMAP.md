@@ -1,0 +1,37 @@
+# Ranked Finance — Roadmap to 1.0
+
+**Design:** [`docs/design.md`](docs/design.md) · **Status:** not started; the build begins in early 2027.
+
+This is a statement of direction and order, not a schedule. Milestones don't have promised dates. Once a milestone starts, its tasks are tracked as GitHub issues.
+
+There are two releases. **v1 is the first demoable product**: the core loop (accounts, net worth, ranks, plan, AI) working end to end on Plaid Sandbox, manual accounts, and demo data. **1.0 is the first public, self-hostable release.** See the design doc's Releases section.
+
+Each milestone ends with software you can run, and each gets its own step-by-step plan, written when the milestone starts, so later plans can use what earlier ones taught you (such as how Plaid Sandbox actually behaves). Milestone 1's plan is already written: [`docs/plans/2026-11-18-m1-foundation.md`](docs/plans/2026-11-18-m1-foundation.md).
+
+### v1: first demoable product
+
+| # | Milestone | Ends with | Design doc sections |
+| --- | --- | --- | --- |
+| 1 | **Foundation** | Log in with a passkey and see an empty app shell (sidebar, top bar, page stubs). CI is green; Dependabot and CodeQL on; a `/health` endpoint. All config from environment variables, so nothing assumes AWS. The user's time zone is stored. Keyboard, contrast, and `Intl` formatting rules apply from the first screen. | Security and hosting; Navigation; Accessibility and formatting; Data model (users) |
+| 2 | **Plaid sync behind the provider interface** | The `DataProvider` interface and normalized tables, with Plaid as the first provider. Webhook signature verification, a no-tokens-in-logs test, and a least-privilege database user from the start. Link Sandbox banks; accounts, balances, transactions, and liabilities sync from webhooks; pending transactions replaced when they post; manual accounts of any kind; closed vs stale accounts; duplicate check; reconnect through Link update mode. | Constraints; Sync; Data sources; Data model |
+| 3 | **Categories, transfers, net worth** | The category pipeline (user rules, starter rules, Plaid categories mapped) with "Always do this for...", refunds as negative spending, split-ready transactions, and transfer matching. A command that seeds demo data (a fake person's accounts and 10 years of history), used to check the performance target from here on. Daily snapshots, net worth API, and a working Home: chart with drag and 30D/1Y/All, the Cash/Investments/Liabilities/Property cards, and Account detail with transactions by month. Hand-entered assets, plus home value by address. | Categories and transfers; Performance; Screens 1 and 4; Gaps closed (assets, stale balances) |
+| 4 | **Ranks** | Rank rules stored as data, a rank evaluator with the 14-day earn/drop buffer and the immediate drop for new high-interest debt, rank history, the Road to Legend band on Home, and the Ranks page Ladder tab. | Ranks: the main feature; Data model (rank_definitions, rank_history) |
+| 5 | **Plan** | Generated rank steps (one per account action, locked), personal goals you can drag between them, payoff-order toggle, recovery step, income sources with steady-pay planning, projections, and the Plan page. | How plans work with ranks; How you get paid; Screen 2 |
+| 6 | **Ask (AI)** | `AiClient` on Spring AI with Claude; the app still works with no AI configured. Ask panel on every page; server-built context; chat history; suggested-change cards (templated wording without AI); monthly AI cost cap; "not financial advice" line. | AI; AI providers; Gaps closed (AI guardrails) |
+| 7 | **Demo-ready** | First-time setup with the starting-rank reveal; empty state; Settings & accounts (About you, how you get paid, accounts, appearance with dark mode); the in-app inbox with sign-in alerts. A few Playwright end-to-end tests of the core loop (sign in with a virtual passkey, add a Sandbox bank, see the rank reveal) run in CI. **v1 is done:** the whole loop can be shown on Sandbox or demo data. | Gaps closed (first-time setup, empty state, dark mode); Screens 5 and 6; Notifications (v1 part) |
+
+### 1.0: first public, self-hostable release
+
+| # | Milestone | Ends with | Design doc sections |
+| --- | --- | --- | --- |
+| 8 | **More ways in** | SimpleFIN as the second provider (setup token, encrypted access URL, daily pull) with the APR and contribution fallbacks. Import CSV, OFX/QFX, and QIF: column guessing with a preview, saved mappings, duplicate flags on review, balances worked back from transactions, plus formats for Monarch, YNAB, Copilot, Actual Budget, and Mint exports. The split screen. AI category suggestions in the review list. Daily USD/CAD rates and conversion into the home currency. | Data sources; Categories and transfers; Data model (import_mappings, exchange_rates) |
+| 9 | **Self-hosting** | The other AI providers (OpenAI and OpenAI-compatible, checked with one local Ollama model). Optional OIDC sign-in, backup passkey, and email recovery code. Email for alerts. One Docker image for both amd64 and arm64 (Raspberry Pi and Apple Silicon servers), built and published to GitHub Container Registry automatically on each release, scanned for known vulnerabilities, with an SBOM attached; a `docker compose` file for the app and Postgres, `_FILE` secrets, reverse-proxy support, `SELF_HOSTING.md`, the update notice, the one-command backup with a test restore, read-only API tokens, export and delete account, and the full export for moving between installs. | Self-hosting; AI providers; Gaps closed (passkey recovery, your data) |
+| 10 | **Hosted launch** | Deploy on AWS with Postgres backups and point-in-time recovery; one test restore; then connect your real accounts once. | Security and hosting |
+
+**Order and why.** Each milestone needs data from the one before it: ranks need snapshots and correct spending, plan steps need ranks and accounts, and the AI needs all of them. The provider interface comes in Milestone 2, before any Plaid-specific code spreads, so adding SimpleFIN later changes nothing downstream. Milestone 4 (ranks) is pure logic over numbers and the heart of the app, so test it hardest; the 14-day buffer and the drop rules are where bugs would feel unfair. Once the rank tests pass, run mutation testing (PIT) on the `ranks` package by hand: it flips things like `>` to `>=` and checks that a test catches each change. Only for ranks; it's too slow and noisy for the rest of the code.
+
+**Real accounts.** Stay on Plaid Sandbox until Milestone 10, since the Trial plan's 10 Items are lifetime and removing one doesn't free the slot. From Milestone 8 you can use your own data through SimpleFIN or file import, since those don't use up Plaid connections.
+
+**After 1.0 (v2 and later, from the design doc):** several users per install; investment holdings for Plaid-linked accounts; "Why it moved" on Home; the Money screen with budget, bills, and set-asides; progress notifications; How you compare, with offline SIPP/CPS processing; and the per-rank peer percentages.
+
+**Interview-prep angle.** Each milestone gives you a story to tell: Spring Security and WebAuthn (1), webhooks, idempotency, and encryption (2), rules engines, matching logic, and BigDecimal money math (3), a rules engine with tests (4), domain modeling (5), LLM integration with guardrails (6), the adapter pattern and file parsing (8), and shipping a self-hostable Docker image (9).

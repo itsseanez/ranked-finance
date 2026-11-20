@@ -1,0 +1,6 @@
+application-local.yml
+design/
+.env*
+CLAUDE.local.md
+.vscode/*
+!.vscode/extensions.json
