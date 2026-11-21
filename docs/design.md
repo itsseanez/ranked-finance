@@ -116,6 +116,7 @@ The app is a "Road to Legend": you rise through ranks by pursuing your own money
 - **Low-rate debt you choose to keep doesn't block Platinum.** A loan under 5% APR counts as covered when you hold enough to pay it off today, outside what Gold already needs: emergency fund and taxable brokerage beyond 3 months of spending, which together must be at least the loan balance. In the plan, a covered loan shows as "Covered: keeping it is your choice" instead of a payoff step. If the cover drops below the balance, the 14-day rule applies as usual. Until a low-rate loan is covered, its Platinum step offers two routes and the user picks one: "Pay it off" or "Build the cover" (grow the emergency fund and brokerage beyond Gold's target until they match the balance). The AI shows the trade-off in interest paid versus investment growth, and the user can switch routes later. Loans at 5–8% still need paying off for Platinum, and anything over 8% still blocks Silver. (The 5% line is Claude's call.)
 - **Every source counts the same.** Hand-entered assets (a car, other property, a hand-entered account) and imported accounts count toward net worth and ranks exactly like linked ones, with no "self-reported" or "verified" label on accounts, ranks, or anything shared. No aggregator reaches every institution, so the source says nothing about honesty. (Sean's decision, Nov 20, 2026; replaces the Nov 18 labeling rule.)
 - **Legend's number leaves out debt payments.** Legend is 25× your yearly spending without debt payments, since Platinum already means no debt beyond a mortgage or covered low-rate loans. Mortgage payments stay in, because housing doesn't end when the loan does: property tax and insurance continue.
+- **Student loans count like any other debt,** including while in school, in grace, or in deferment: a loan over 8% blocks Silver whether or not a payment is due, the same as Ramsey's Baby Step 2. Someone in medical school may sit at Bronze for years; that's intended. (Sean's decision, Nov 20, 2026; considered and rejected: exempting deferred loans from Silver, and a projected-rank display.)
 - **Platinum's 15% needs income.** The investing step can't be met with no income source, so 15% of $0 never passes automatically.
 - **Crypto never counts as emergency fund.** It counts toward net worth and ranks like any investment, but Bronze, Gold, and the Legend keep-it step ignore it, because it can drop by half. The "taxable brokerage counts" rule means stocks and funds only.
 - **No shared accounts.** Each user's accounts and rank are theirs alone. There are no joint-account splits, household ranks, or partner access, now or later. If an account is jointly owned, it counts in full for the user who links it.
@@ -313,6 +314,7 @@ Spending, bill types, recurring-bill detection, and Gold's target all depend on 
 | recurring_bills | name, amount, schedule, next due date, paying account, set-aside on or off, type (housing, vehicle, other) | v2 Money screen |
 | notifications | type, message, read state, action, created date | the inbox; email sends from the same rows; kept 90 days |
 | chat_messages | role, content, page, timestamp | recent turns go into each request |
+| peer_benchmarks | group, metric, value, percentile or share, source survey, survey year, sample size | v2 How you compare; loaded from the versioned file the offline pipeline (`tools/peer-data/`) writes, never computed in the app |
 
 ### AI
 
@@ -397,12 +399,21 @@ The How you compare tab on the Ranks page, plus the per-rank "X% have reached th
 
 - Profile: age, sex, marital status, net worth (from the app), and monthly income (entered or inferred from deposits).
 - Headline: "About 1 in N unmarried men under 35 have both your income and your net worth or higher."
-- Net worth percentile against unmarried men heading their own household, in his age group, from the Census household-finance survey (SIPP). Wealth is measured per household, so the comparison uses single people, whose household wealth is all theirs. The Fed's Survey of Consumer Finances is the fallback, but its sample gets thin for small groups.
-- Income percentile against men 25–34, from the Census Current Population Survey, which records income per person.
+- **Where each number comes from** (Sean's decision, Nov 21, 2026). A figure that combines traits must come from one survey that records all of them, because combining separate surveys ignores how the traits move together (income and net worth are correlated).
+  - **Net worth percentile, and the joint "1 in N" headline:** SIPP (the Census household-finance survey), which records both income and wealth for the same people. Compared against unmarried men heading their own household in the user's age group, since wealth is measured per household and a single person's household wealth is all theirs.
+  - **Income-only percentile:** the Census Current Population Survey (its Annual Social and Economic Supplement), which records income per person and has the largest sample.
+  - **Per-rank shares ("X% have reached Gold"):** the Fed's Survey of Consumer Finances (SCF), the only one of the three with liquid savings, debt with interest rates, and spending in the same record. Ranks stack, so a share must test every rank's requirement on the same household at once. When the user's group has too few survey records for a reliable share, the app uses the next broader group (for example, all adults under 35) and names the group it used.
 - A line tying it to the plan: the projected percentile once the next goal is done.
-- **The 1-in-N figure must come from filtering survey records on all traits at once, never from multiplying separate percentages.** Income and net worth are correlated, so multiplying overstates rarity. Use the public microdata (IPUMS makes Census files easier).
-- Percentiles are precomputed offline into lookup tables the app ships with, and refreshed when new survey data comes out (SIPP yearly, SCF every three years).
+- **Never multiply separate percentages,** and never combine two surveys into one figure. Use the public microdata (IPUMS makes Census files easier) with the survey's weights.
 - Open question: how SIPP counts adults who live with their parents. Check its documentation before relying on it.
+
+**How the comparison data stays current** (Claude's calls)
+
+- **An offline pipeline in the repo** (`tools/peer-data/`) downloads each survey's public microdata, applies the survey weights, and writes small lookup tables: percentiles by group, and per-rank shares by group. It never runs inside the app, and the raw survey files are never committed, only the script and its output.
+- **The output ships as data, like rank thresholds:** a versioned file loaded into a `peer_benchmarks` table (group, metric, value, percentile or share, source survey, survey year, sample size). Self-hosters get new numbers with the next release; the hosted version gets them on deploy. No install ever downloads survey data itself.
+- **Updating is a reviewed change, not automatic.** Surveys rename variables and change definitions between editions, so a human runs the pipeline, checks that the numbers moved sensibly against the previous edition, and merges it like any other change.
+- **A scheduled GitHub Action** checks each source's download page once a month and opens an issue when a new edition appears, so nothing gets missed. Expected cadence: CPS yearly, SIPP yearly, SCF every three years (the 2025 SCF came out October 2026; the next is expected in late 2029).
+- **The app always shows its source,** for example "Based on the 2025 Survey of Consumer Finances." When an update shifts someone's percentile or share, the app says the comparison data was updated, so a change doesn't look like the user's money moved.
 - U.S. only at first; other countries need their own data sources.
 
 **Later (Sean's decisions, Nov 20, 2026)**
