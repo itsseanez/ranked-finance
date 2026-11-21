@@ -25,7 +25,7 @@ Planned in the Milestone 1 plan; update this section once they exist (or re-run 
 - New feature? Add the backend package and the matching `features/<name>/` folder together.
 
 ## Stack
-Java 25, Spring Boot 4.x, Maven, Spring Security passkeys (spring-security-webauthn), Spring JDBC (`JdbcClient`), Flyway, PostgreSQL 17, Testcontainers. React 19, TypeScript, Vite, Tailwind v4, TanStack Query, Vitest. Plaid Java SDK, SimpleFIN over HTTP, Spring AI (Anthropic, OpenAI, OpenAI-compatible). Docker image for self-hosting; AWS for the hosted version.
+Java 25, Spring Boot 4.x, Maven, Spring Security passkeys (spring-security-webauthn), Spring JDBC (`JdbcClient`), Flyway, PostgreSQL 19, Testcontainers. React 19, TypeScript, Vite, Tailwind v4, TanStack Query, Vitest. Plaid Java SDK, SimpleFIN over HTTP, Spring AI (Anthropic, OpenAI, OpenAI-compatible). Docker image for self-hosting; AWS for the hosted version.
 
 ## Rules that must not break
 - **Numbers are computed in code, never by the AI.** The model explains numbers the server computed. It never decides a rank and never edits the plan; it can only propose a suggestion card.
