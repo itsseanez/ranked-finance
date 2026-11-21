@@ -456,4 +456,3 @@ The How you compare tab on the Ranks page, plus the per-rank "X% have reached th
 - Which default model, prompt wording, and how many chat turns to include.
 - Charting library, visual style, and the time the daily sync runs.
 - AWS service choices for the API, the scheduled job, and Postgres.
-- Project layout, Gradle or Maven, and the migrations tool (Flyway is the default).
