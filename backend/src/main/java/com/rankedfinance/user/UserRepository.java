@@ -1,0 +1,45 @@
+package com.rankedfinance.user;
+
+import java.util.UUID;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
+
+@Repository
+public class UserRepository {
+
+    private final JdbcClient jdbcClient;
+
+    public UserRepository(JdbcClient jdbcClient) {
+        this.jdbcClient = jdbcClient;
+    }
+
+    /** Creates the install's single owner. v1 allows exactly one user, so a second call fails. */
+    @Transactional
+    public User createOwner(String email, String displayName) {
+        if (count() > 0) {
+            throw new IllegalStateException("owner already exists");
+        }
+        return jdbcClient
+                .sql(
+                        """
+                        insert into users (id, email, display_name)
+                        values (:id, :email, :displayName)
+                        returning id, email, display_name, birth_year, sex, marital_status,
+                                  living_situation, country, time_zone, home_currency
+                        """)
+                .param("id", UUID.randomUUID())
+                .param("email", email)
+                .param("displayName", displayName)
+                .query(User.class)
+                .single();
+    }
+
+    /**
+     * Counts every user on the install. Deliberately not scoped to one user: it guards the
+     * single-owner rule.
+     */
+    public long count() {
+        return jdbcClient.sql("select count(*) from users").query(Long.class).single();
+    }
+}
