@@ -68,6 +68,7 @@ Java 25, Spring Boot 4.x, Maven, Spring Security passkeys (spring-security-webau
 - Examples: `feat(ranks): add 14-day drop rule` · `fix(sync): reject Plaid webhooks with invalid signatures` · `docs(adr): add 0005 webhook retries`
 - Fill in the PR template's checklist (`.github/pull_request_template.md`).
 - Work on a branch, one PR per task; `main` is protected and squash-merged, so the PR title must be a valid Conventional Commit. release-please turns the history into `CHANGELOG.md` and version tags; never edit the changelog or bump versions by hand.
+- Branch names follow [Conventional Branch](https://conventional-branch.github.io/): `<type>/<description>`, lowercase kebab-case, 2–5 words, named after the work, never a task or milestone number. Types: `feature/` (new functionality), `bugfix/`, `hotfix/` (urgent fix to the deployed app), `release/`, `chore/` (docs, dependencies, config, CI). Examples: `feature/user-repository` · `feature/passkey-login` · `bugfix/registration-gate-csrf` · `chore/update-spotless`. Delete the branch after merging.
 - commitlint checks every message (a local `commit-msg` hook and CI); don't bypass it with `--no-verify`.
 
 ## Testing
