@@ -1,6 +1,6 @@
 # Ranked Finance — Design
 
-Approved Nov 18, 2026 · Public version (the builder's personal financial details are kept out of this repo)
+Status: approved Nov 18, 2026
 
 ## Intent
 
@@ -10,7 +10,7 @@ A personal finance app built as a ranked game for money: you climb from Iron to 
 
 **Name:** Ranked Finance ("Road to Legend" is the name of the rank feature). The closest name conflict found, Rank (formerly Moni), is a small app outside the U.S. and judged low-risk. A trademark search in the software and financial-services classes is due before any public launch.
 
-**Who:** The builder first, as the only user. A business is possible later, so v1 avoids choices that would block multiple users, but builds nothing for them yet.
+**Who:** one user at first, starting with the maintainer. A business is possible later, so v1 avoids choices that would block multiple users, but builds nothing for them yet.
 
 **When:** the build starts in January 2027.
 
@@ -37,7 +37,7 @@ The common thread: almost every question is "here is my situation, what is the r
 - Accounts sync with no manual work, as simply as Monarch or Copilot, through Plaid or SimpleFIN. Any bank's CSV, OFX, or QIF export imports in a few clicks, and any account can be entered by hand.
 - Easy to self-host (`docker compose up`), with the bank-data provider and the AI provider both swappable.
 - One net worth number with its history, built from daily balance snapshots.
-- Ranks from Iron to Legend, checked in code, with real demotion. The plan is the route up: rank steps built from his accounts, plus personal goals he adds.
+- Ranks from Iron to Legend, checked in code, with real demotion. The plan is the route up: rank steps built from the user's accounts, plus personal goals they add.
 - An Ask panel on every page that reads the plan, rank, and current numbers before every answer, and keeps answers tied to that plan.
 - Desktop web app first. The layout still works in a phone browser; a dedicated mobile app comes later, only if the app proves itself.
 
@@ -52,8 +52,8 @@ The common thread: almost every question is "here is my situation, what is the r
 **Anti-goals (failure even if it works)**
 
 - A headline feed about individual companies. For someone whose money is mostly in index and target-date funds, single-stock news is noise that pulls against staying focused.
-- An AI that quietly drifts from the plan Sean decided, or gives advice that ignores it.
-- An app he stops opening because connections break and he has to fix them by hand.
+- An AI that quietly drifts from the plan the user decided on, or gives advice that ignores it.
+- An app people stop opening because connections break and they have to fix them by hand.
 - Ranks that feel unfair: decided by the AI, flipping daily with the market, or skippable by deleting steps.
 
 ## Constraints
@@ -67,7 +67,7 @@ The common thread: almost every question is "here is my situation, what is the r
 
 ## Approaches
 
-Sean picked **A: net worth first.** Plaid plus snapshots plus the plan plus AI chat makes something usable within a few weekends. The feed needs weeks of snapshot history to explain anything anyway.
+The chosen approach is **A: net worth first.** Plaid plus snapshots plus the plan plus AI chat makes something usable within a few weekends. The feed needs weeks of snapshot history to explain anything anyway.
 
 | Approach | What v1 includes | Trade-off | Decision |
 | --- | --- | --- | --- |
@@ -77,10 +77,10 @@ Sean picked **A: net worth first.** Plaid plus snapshots plus the plan plus AI c
 
 Earlier choices made along the way:
 
-- **Data in:** Plaid over manual check-ins or CSV imports, for zero-effort sync. Manual entry stays as a per-account fallback. Updated Nov 19, 2026 (Sean's decision): Plaid and SimpleFIN both ship in v1 behind one provider interface, and file import (CSV, OFX/QFX, QIF) is a first-class source. See Data sources.
-- **Platform:** desktop web app first (Sean's decision, Nov 2026), with a mobile app later if it earns one. The earlier pick was an installable phone web app; the phone mockups stay as the reference for that later app. The frontend reuses Sean's React stack.
+- **Data in:** Plaid over manual check-ins or CSV imports, for zero-effort sync. Manual entry stays as a per-account fallback. Updated Nov 19, 2026: Plaid and SimpleFIN both ship in v1 behind one provider interface, and file import (CSV, OFX/QFX, QIF) is a first-class source. See Data sources.
+- **Platform:** desktop web app first, with a mobile app later if it earns one. The earlier pick was an installable phone web app; the phone mockups stay as the reference for that later app. The frontend is React.
 - **News:** "why your net worth moved" over a headline feed, because most people's holdings are diversified funds.
-- **Main feature:** a universal rank ladder (Iron to Legend) with demotion, over plain goal tracking. Sean's call, to give the app a reason to open every week and a shareable hook for YouTube.
+- **Main feature:** a universal rank ladder (Iron to Legend) with demotion, over plain goal tracking. Chosen to give the app a reason to open every week and something people want to share.
 
 ## Ranks: the main feature
 
@@ -98,10 +98,10 @@ The app is a "Road to Legend": you rise through ranks by pursuing your own money
 | Grandmaster | $500,000 net worth |
 | Legend | Financial independence: invested assets of 25× your yearly expenses (the 4% rule), calculated from your actual spending |
 
-- **Your starting rank is instant.** At first-time setup, the app pulls up to 24 months of transactions when you link accounts (Plaid's `days_requested`, set when Link starts), so your 3 months of spending and your income are known on day one. The rank reveal uses your balances as they are that day, with no 14-day wait and no 60-day spending-history wait. Someone who joins with $25k saved, no high-interest debt, and $120k net worth starts at Diamond. After signup, every rank change follows the 14-day rule, including a rise from an account you link later. (Sean's decision, Nov 18, 2026; the later-link rule is Claude's call.)
-- **Ranks stack.** Your rank is the highest rank whose requirement you meet *and* every rank below it. To hold Diamond, you must still meet Bronze through Platinum, so someone with $150k in a 401(k) but no emergency fund and a 24% credit card is Iron, not Diamond. Income never counts on its own; what you've built and what you owe does. (Sean's decision, Nov 18, 2026.)
+- **Your starting rank is instant.** At first-time setup, the app pulls up to 24 months of transactions when you link accounts (Plaid's `days_requested`, set when Link starts), so your 3 months of spending and your income are known on day one. The rank reveal uses your balances as they are that day, with no 14-day wait and no 60-day spending-history wait. Someone who joins with $25k saved, no high-interest debt, and $120k net worth starts at Diamond. After signup, every rank change follows the 14-day rule, including a rise from an account you link later. (Decided Nov 18, 2026.)
+- **Ranks stack.** Your rank is the highest rank whose requirement you meet *and* every rank below it. To hold Diamond, you must still meet Bronze through Platinum, so someone with $150k in a 401(k) but no emergency fund and a 24% credit card is Iron, not Diamond. Income never counts on its own; what you've built and what you owe does. (Decided Nov 18, 2026.)
 - **Your rank is where you are now, and you can drop.** Keeping wealth is part of the game. You earn a rank by staying at or above its line for 14 days, and you drop after 14 days straight below it. The app warns you on day 1 ("Diamond at risk, 13 days to recover"). The buffer stops market wobbles from flipping your rank daily. New high-interest debt drops you immediately.
-- **The emergency fund is an account you choose, plus a taxable brokerage.** In Settings & accounts (and during first-time setup), you mark one or more cash accounts, linked or hand-entered, as your emergency fund. Bronze, Gold, and the Legend keep-it step count those accounts plus any taxable brokerage at full balance, since you can sell investments in a few days. Retirement accounts, HSAs, home equity, and other assets never count toward the emergency fund. Checking doesn't count unless you mark it. If you have neither a marked account nor a brokerage, the Bronze step reads "Choose your emergency fund account." The 14-day rule applies to changes after signup. (Sean's decisions, Nov 18, 2026.)
+- **The emergency fund is an account you choose, plus a taxable brokerage.** In Settings & accounts (and during first-time setup), you mark one or more cash accounts, linked or hand-entered, as your emergency fund. Bronze, Gold, and the Legend keep-it step count those accounts plus any taxable brokerage at full balance, since you can sell investments in a few days. Retirement accounts, HSAs, home equity, and other assets never count toward the emergency fund. Checking doesn't count unless you mark it. If you have neither a marked account nor a brokerage, the Bronze step reads "Choose your emergency fund account." The 14-day rule applies to changes after signup. (Decided Nov 18, 2026.)
 - **Ranks are checked in code** from balances, debts, and Plaid data. The AI explains what it would take to rank up, but never decides your rank.
 - **Comparison:** each rank shows the share of unmarried men under 35 (or your own group) who have reached it, computed from survey microdata. Net worth tiers come straight from the data; emergency fund tiers are estimated from liquid savings.
 - **Where it shows:** Home keeps net worth first, with a rank badge right beside it ("Silver · 82% to Gold"). Desktop Home runs top to bottom: net worth (full width, with the chart), the Cash / Investments / Liabilities cards, then a full-width Road to Legend band, then This month. The band has the headline ("Silver · 82% to Gold"), a track of all nine ranks with your position marked, "To reach Gold" with a progress bar (which is also step 1 of your plan), and what Platinum needs next. The Ranks page (in the sidebar) has two tabs: Ladder (the full ladder with Reached, In progress, Next, and Locked states, plus how ranks work) and How you compare (the full peer comparison).
@@ -109,14 +109,14 @@ The app is a "Road to Legend": you rise through ranks by pursuing your own money
 - **Drops are framed as a path back, not a verdict** (from the competitor research). "At risk" warnings lead with the fix in dollars and days ("$400 more by Dec 3 keeps Diamond"). A drop shows what it takes to earn the rank back and the recovery step, never language like "you lost" or "you failed." The rank history shows earned-back ranks as comebacks.
 - **Rank thresholds are content, not code:** they're stored as data so they can be tuned later without a release.
 
-**How the numbers are read** (Sean's decisions, Nov 18, 2026)
+**How the numbers are read** (decided Nov 18, 2026)
 
 - **Credit cards count as debt only when they carry a balance.** A card is debt if its last payment was less than its last statement balance, or interest was charged; both come from Plaid Liabilities. Someone who pays the card in full every month has no card debt, and a purchase never drops their rank. A card on a promotional rate (say 0% on a balance transfer) is judged by the rate applied to the balance, not the regular purchase rate.
 - **Spending excludes money that isn't spent.** Transfers between your own accounts, credit card payments (the card purchases count instead), and money invested are not spending. Gold's target uses your typical month: the median monthly spending over the last 6 months, so one big purchase like a car down payment doesn't spike it.
-- **Low-rate debt you choose to keep doesn't block Platinum.** A loan under 5% APR counts as covered when you hold enough to pay it off today, outside what Gold already needs: emergency fund and taxable brokerage beyond 3 months of spending, which together must be at least the loan balance. In the plan, a covered loan shows as "Covered: keeping it is your choice" instead of a payoff step. If the cover drops below the balance, the 14-day rule applies as usual. Until a low-rate loan is covered, its Platinum step offers two routes and the user picks one: "Pay it off" or "Build the cover" (grow the emergency fund and brokerage beyond Gold's target until they match the balance). The AI shows the trade-off in interest paid versus investment growth, and the user can switch routes later. Loans at 5–8% still need paying off for Platinum, and anything over 8% still blocks Silver. (The 5% line is Claude's call.)
-- **Every source counts the same.** Hand-entered assets (a car, other property, a hand-entered account) and imported accounts count toward net worth and ranks exactly like linked ones, with no "self-reported" or "verified" label on accounts, ranks, or anything shared. No aggregator reaches every institution, so the source says nothing about honesty. (Sean's decision, Nov 20, 2026; replaces the Nov 18 labeling rule.)
+- **Low-rate debt you choose to keep doesn't block Platinum.** A loan under 5% APR counts as covered when you hold enough to pay it off today, outside what Gold already needs: emergency fund and taxable brokerage beyond 3 months of spending, which together must be at least the loan balance. In the plan, a covered loan shows as "Covered: keeping it is your choice" instead of a payoff step. If the cover drops below the balance, the 14-day rule applies as usual. Until a low-rate loan is covered, its Platinum step offers two routes and the user picks one: "Pay it off" or "Build the cover" (grow the emergency fund and brokerage beyond Gold's target until they match the balance). The AI shows the trade-off in interest paid versus investment growth, and the user can switch routes later. Loans at 5–8% still need paying off for Platinum, and anything over 8% still blocks Silver.
+- **Every source counts the same.** Hand-entered assets (a car, other property, a hand-entered account) and imported accounts count toward net worth and ranks exactly like linked ones, with no "self-reported" or "verified" label on accounts, ranks, or anything shared. No aggregator reaches every institution, so the source says nothing about honesty. (Decided Nov 20, 2026; replaces the Nov 18 labeling rule.)
 - **Legend's number leaves out debt payments.** Legend is 25× your yearly spending without debt payments, since Platinum already means no debt beyond a mortgage or covered low-rate loans. Mortgage payments stay in, because housing doesn't end when the loan does: property tax and insurance continue.
-- **Student loans count like any other debt,** including while in school, in grace, or in deferment: a loan over 8% blocks Silver whether or not a payment is due, the same as Ramsey's Baby Step 2. Someone in medical school may sit at Bronze for years; that's intended. (Sean's decision, Nov 20, 2026; considered and rejected: exempting deferred loans from Silver, and a projected-rank display.)
+- **Student loans count like any other debt,** including while in school, in grace, or in deferment: a loan over 8% blocks Silver whether or not a payment is due, the same as Ramsey's Baby Step 2. Someone in medical school may sit at Bronze for years; that's intended. (Decided Nov 20, 2026; considered and rejected: exempting deferred loans from Silver, and a projected-rank display.)
 - **Platinum's 15% needs income.** The investing step can't be met with no income source, so 15% of $0 never passes automatically.
 - **Crypto never counts as emergency fund.** It counts toward net worth and ranks like any investment, but Bronze, Gold, and the Legend keep-it step ignore it, because it can drop by half. The "taxable brokerage counts" rule means stocks and funds only.
 - **No shared accounts.** Each user's accounts and rank are theirs alone. There are no joint-account splits, household ranks, or partner access, now or later. If an account is jointly owned, it counts in full for the user who links it.
@@ -132,17 +132,17 @@ The app is a "Road to Legend": you rise through ranks by pursuing your own money
 
 * **Rank steps are personalized: one step per action, built from your real accounts.** Each rank's requirement expands into concrete steps. Silver becomes one step per card or loan over 8% APR (two credit cards make two steps); Gold becomes one emergency-fund step sized from your expenses; Platinum becomes one step per remaining non-mortgage debt plus the 15% investing step. Steps are grouped under their rank in the plan.
 * **Payoff order within a rank:** for debt steps you choose highest APR first (the default, saves the most interest) or smallest balance first (quicker wins). The steps reorder automatically, and the AI shows the tradeoff in dollars and weeks. Other debts stay at minimum payments until their step comes up.
-* **Steps update themselves:** a new card adds a step; a paid-off loan completes one. Balances and APRs come from Plaid (its Liabilities data covers credit cards and student loans); for other loans, like auto loans, Sean enters the APR once.
-* **Rank steps from Diamond to Legend** (Sean's decision, Nov 21, 2026). These ranks are about how much you've built rather than a list of debts, so each one is a single step showing its target, your progress, and a projected date.
+* **Steps update themselves:** a new card adds a step; a paid-off loan completes one. Balances and APRs come from Plaid (its Liabilities data covers credit cards and student loans); for other loans, like auto loans, the user enters the APR once.
+* **Rank steps from Diamond to Legend** (decided Nov 21, 2026). These ranks are about how much you've built rather than a list of debts, so each one is a single step showing its target, your progress, and a projected date.
   * **Diamond, Master, Grandmaster:** target is the rank's net worth ($100k, $250k, $500k). Progress is net worth, home equity and every asset included.
   * **Legend:** target is your independence number, 25× yearly spending without debt payments (mortgage payments stay in). Progress counts retirement accounts, HSAs, taxable brokerage, crypto, and cash; home equity, cars, and other property are left out because you can't live off them. Ranks stack, so Legend still waits for Grandmaster; if the independence number is below $500k, both unlock together.
   * **Projected dates** use what you actually add each month plus a conservative growth estimate for investments (plans may use estimates; ranks never do). The step names the assumption ("assumes about 5% a year after inflation"). The growth rate is stored as data, like rank thresholds, so it can be tuned without a release; because it's after inflation while the Diamond to Grandmaster targets are fixed dollar amounts, those dates lean late, which is intended.
   * **Code computes the options with real numbers, the same as "When a goal isn't reachable":** investing more ("$1,000 more a month: about 2 years sooner"); spending less, which for Legend works twice, since every $1 less spent a year lowers the target by $25 and frees that dollar to invest; and, where there's a mortgage, paying it down versus investing the same money, in dollars and dates (paying it off lowers the Legend number because the payment leaves your spending). The AI explains the options; the user picks.
   * **Life events move these steps too:** a planned cost change updates the independence number and every projected date from the event's date on.
   * Steps for lower ranks never disappear: if a lower rank stops being met, its recovery step goes back to the top, as with any rank.
-* Mockups: Sean's Plan, plus a "Plan example: two credit cards" artboard showing a Bronze user with two credit card steps (Card A and Card B) and the payoff-order toggle.
+* Mockups: the Plan screen, plus a "Plan example: two credit cards" artboard showing a Bronze user with two credit card steps (Card A and Card B) and the payoff-order toggle.
 
-**Life events** (Sean's decision, Nov 18, 2026)
+**Life events** (decided Nov 18, 2026)
 
 - **Any personal goal can be a life event.** It has a name you choose (move out, new car, baby, wedding, new job, anything), plus an optional date, an optional one-time cost (the amount to save, like any personal goal), and optional expected monthly cost changes. A cost change can be positive (rent starting) or negative (daycare ending).
 - **The app suggests amounts for common events.** Picking a preset like "Move out" pre-fills a one-time cost (deposit + first month's rent + moving + a furniture allowance) and prompts for rent and utilities. Every number is editable. A custom event starts blank.
@@ -152,11 +152,11 @@ The app is a "Road to Legend": you rise through ranks by pursuing your own money
 - **After the date,** the app replaces the estimate with real numbers from your transactions once they appear, and updates the plan.
 - This replaces the earlier idea of a card for users living with parents; telling the app your plan beats it guessing from your living situation.
 
-**Big-bill suggestion card** (Sean's decision, Nov 18, 2026)
+**Big-bill suggestion card** (decided Nov 18, 2026)
 
-- A recurring payment triggers one suggestion card when it takes more of your take-home pay (actual deposits over 90 days) than is normal for its type: **housing** (rent, mortgage) over 40%, **vehicle** (auto loan or lease) over 15%, **anything else** over 25%. Rent at a third of take-home is normal and never triggers it; a $2,000 car payment on $5,000 take-home (40%) does. Each payment's type comes from its category (see Categories and transfers), and the user can change it. The card compares keeping it, paying it off early, refinancing, and selling or replacing (for housing: a cheaper place or a roommate at the next lease renewal), in dollars per month and in rank dates. Code computes the numbers; the AI explains them. Dismissed cards don't return unless the payment or income changes by more than 10%. The thresholds are stored as data, like rank thresholds, so they can be tuned without a release. (The percentages are Claude's calls.)
+- A recurring payment triggers one suggestion card when it takes more of your take-home pay (actual deposits over 90 days) than is normal for its type: **housing** (rent, mortgage) over 40%, **vehicle** (auto loan or lease) over 15%, **anything else** over 25%. Rent at a third of take-home is normal and never triggers it; a $2,000 car payment on $5,000 take-home (40%) does. Each payment's type comes from its category (see Categories and transfers), and the user can change it. The card compares keeping it, paying it off early, refinancing, and selling or replacing (for housing: a cheaper place or a roommate at the next lease renewal), in dollars per month and in rank dates. Code computes the numbers; the AI explains them. Dismissed cards don't return unless the payment or income changes by more than 10%. The thresholds are stored as data, like rank thresholds, so they can be tuned without a release.
 
-**When a goal isn't reachable** (Sean's decision, Nov 18, 2026)
+**When a goal isn't reachable** (decided Nov 18, 2026)
 
 - **Code finds it, not the AI.** When a step's projected date lands after its target date, or never at the current pace, the step shows "Not reachable at this pace" instead of a date.
 - **Code computes every option, with real numbers:** the date the current pace does reach ("$15k by August 2028, not October 2027"); the amount reachable by the target date ("about $11k by October 2027"); the specific spending categories or bills that would close the gap ("$180 a month less on eating out"); and, only when it's real for that person, income: for hourly, tips, or gig income, extra shifts in dates ("one extra shift a week reaches it in June"). Salaried users don't get "ask for a raise" advice unless they ask about income.
@@ -192,9 +192,9 @@ The app is a "Road to Legend": you rise through ranks by pursuing your own money
 
 V1 is a desktop web app with six pages (Home, Plan, Ranks, Account detail, Settings & accounts, Notifications), an Ask panel on every page, bank sync through Plaid or SimpleFIN plus file import, and an AI that answers from computed numbers, the plan, and the rank.
 
-### Releases (Sean's decision, Nov 20, 2026)
+### Releases (decided Nov 20, 2026)
 
-- **v1 is the first demoable product.** The core loop works end to end on Plaid Sandbox, manual accounts, and the demo data: add accounts, see net worth, get a starting rank in first-time setup, follow the plan, and ask the AI (Claude). It's what goes in videos and to early testers.
+- **v1 is the first demoable product.** The core loop works end to end on Plaid Sandbox, manual accounts, and the demo data: add accounts, see net worth, get a starting rank in first-time setup, follow the plan, and ask the AI (Claude). It's what goes to early testers.
 - **1.0 is the first public, self-hostable release.** It adds the rest of this section: SimpleFIN, file import with the other-app formats, AI category suggestions, the other AI providers, USD/CAD conversion, OIDC sign-in, the Docker image and self-hosting guide, backups, the update notice, API tokens, export for moving between installs, and passkey and email recovery. Then the hosted deployment.
 - Correctness rules stay in v1, because ranks are wrong without them: pending transactions, refunds, transfer matching, starter category rules, the time zone, and the performance target.
 - Where this document says "v1" about a feature, ROADMAP.md says whether it lands in v1 or 1.0.
@@ -220,13 +220,13 @@ Clicking an account row anywhere opens its Account detail page; there are no sep
 - The daily net worth snapshot runs after the morning updates arrive (default 6:00 AM, adjustable in Settings), not at a fixed time before them. It writes one row per account per day.
 - There is no "Sync now" button and no forced refresh (/transactions/refresh or real-time /accounts/balance/get), so nothing has to change if this becomes a business. Balances update as fast as Plaid does: the moment a webhook says new data is ready, the backend pulls it and updates the app.
 - There's no single "Synced" time on Home. Instead, a health summary (for example "5 up to date · 1 needs attention") links to Settings & accounts, because net worth is only as fresh as its stalest account.
-- Plaid webhooks flag logins that need re-authentication. The app sends Sean through Link's update mode to fix them. This doesn't use up a new Item.
-- Manual accounts store whatever Sean enters, and the app nudges him when one hasn't been updated in more than 14 days.
-- **Any account can be added by hand.** "Add an account" offers Plaid, SimpleFIN, file import, or manual (whichever are configured; see Data sources). A manual account can be cash, an investment (taxable brokerage, retirement, HSA, or crypto), or a debt (balance, APR, minimum payment). This covers debts Plaid can't see (buy now, pay later loans, medical bills, money owed to family or the IRS, small lenders) and institutions Plaid can't reach. Manual accounts count toward net worth and ranks exactly like linked ones. First-time setup asks "Any accounts or debts we can't see?" (Sean's decision, Nov 18, 2026.)
+- Plaid webhooks flag logins that need re-authentication. The app sends the user through Link's update mode to fix them. This doesn't use up a new Item.
+- Manual accounts store whatever the user enters, and the app nudges them when one hasn't been updated in more than 14 days.
+- **Any account can be added by hand.** "Add an account" offers Plaid, SimpleFIN, file import, or manual (whichever are configured; see Data sources). A manual account can be cash, an investment (taxable brokerage, retirement, HSA, or crypto), or a debt (balance, APR, minimum payment). This covers debts Plaid can't see (buy now, pay later loans, medical bills, money owed to family or the IRS, small lenders) and institutions Plaid can't reach. Manual accounts count toward net worth and ranks exactly like linked ones. First-time setup asks "Any accounts or debts we can't see?" (Decided Nov 18, 2026.)
 - **Closed is not stale.** A stale account (a broken connection, or a manual balance that hasn't been updated) keeps counting at its last known balance. A closed account counts as $0 from the day it closes, and its history stays. An account is closed when its provider stops returning it or the user marks it closed.
 - **No double counting.** When a new account matches an existing one (same institution, last 4 digits, and kind, or a manual account with the same name and kind), the app asks "Is this the same as X?" before counting it. If it is, the linked account replaces the manual one and the history merges.
 
-### Data sources (Sean's decisions, Nov 19, 2026)
+### Data sources (decided Nov 19, 2026)
 
 Every source writes to the same normalized tables (connections, accounts, transactions, balance_snapshots). Ranks, the plan, and the AI read only those tables, never a provider's own fields, so a provider can be added or swapped without touching them. Each bank-data source implements one `DataProvider` interface: connect, list accounts, sync balances and transactions, report connection status, and reconnect. This is how Actual Budget and Sure handle several aggregators. See [ADR 0007](adr/0007-swappable-data-providers.md).
 
@@ -239,11 +239,11 @@ Every source writes to the same normalized tables (connections, accounts, transa
   - Balances: OFX files include an ending balance. For CSV and QIF the user enters the current balance once, and the app works earlier daily balances backward from the transactions.
   - Imported history counts toward the instant starting rank and Gold's 60 days of spending history, so someone who never links a bank still gets ranked on day one.
   - Imported accounts get the same 14-day "update me" nudge as manual accounts.
-  - **Imports from other apps:** built-in formats for the CSV exports of Monarch, YNAB, Copilot, Actual Budget, and Mint, so a switcher's full history (accounts, transactions, and their categories) arrives in one step and their starting rank is right on day one. (Sean's decision, Nov 20, 2026.)
+  - **Imports from other apps:** built-in formats for the CSV exports of Monarch, YNAB, Copilot, Actual Budget, and Mint, so a switcher's full history (accounts, transactions, and their categories) arrives in one step and their starting rank is right on day one. (Decided Nov 20, 2026.)
 - **Manual:** as described in Sync.
 - Which sources appear is configuration. The hosted version turns on Plaid; a self-hosted install turns on whatever it has credentials for (SimpleFIN, file import, and manual need none). A source that isn't configured doesn't appear in "Add an account."
 
-### Self-hosting (Sean's decision, Nov 19, 2026)
+### Self-hosting (decided Nov 19, 2026)
 
 - `docker compose up` runs the app and Postgres. The app ships as one container image (Spring Boot serving the built frontend), published to GitHub Container Registry with each release.
 - Everything is configured through environment variables: database URL, encryption key, optional Plaid keys, and AI settings. AWS (KMS, Secrets Manager, managed Postgres) is how the hosted version runs, never a requirement of the code.
@@ -251,15 +251,15 @@ Every source writes to the same normalized tables (connections, accounts, transa
 - Flyway runs migrations on startup, so upgrading is pulling the new image and restarting.
 - A `SELF_HOSTING.md` (setup, backups, upgrades, which sources to configure) ships with the first release.
 - One user per install in v1, the same as the hosted v1.
-- Every secret setting also accepts a `_FILE` variant (for example `RF_ENCRYPTION_KEY_FILE`) so Docker secrets work, and the app runs correctly behind a reverse proxy at any base URL or subpath. (Claude's calls; both are common self-hoster requests.)
-- **Update notice:** the app checks GitHub's latest release once a day and shows "Version X is available" in Settings. Nothing about the install is sent; it can be turned off. (Sean's decision, Nov 20, 2026.)
+- Every secret setting also accepts a `_FILE` variant (for example `RF_ENCRYPTION_KEY_FILE`) so Docker secrets work, and the app runs correctly behind a reverse proxy at any base URL or subpath. (Both are common self-hoster requests.)
+- **Update notice:** the app checks GitHub's latest release once a day and shows "Version X is available" in Settings. Nothing about the install is sent; it can be turned off. (Decided Nov 20, 2026.)
 - **One-command backup:** a documented command (and a script in the repo) dumps the database to a file, and the guide reminds you the encryption key must be backed up separately. Restore is the same command in reverse, and the guide includes a test restore.
-- **API:** the OpenAPI spec the frontend already uses is the public API. Users create read-only API tokens in Settings for their own scripts. Writes through the API wait until after v1. (Read-only first is Claude's call.)
-- **Export for moving installs:** a full export (accounts, history, categories, rules, plan, and settings, but never provider tokens) that a fresh install imports completely, so people can move between the hosted version and their own server in either direction. No lock-in either way. (Sean's decision, Nov 20, 2026.)
+- **API:** the OpenAPI spec the frontend already uses is the public API. Users create read-only API tokens in Settings for their own scripts. Writes through the API wait until after v1.
+- **Export for moving installs:** a full export (accounts, history, categories, rules, plan, and settings, but never provider tokens) that a fresh install imports completely, so people can move between the hosted version and their own server in either direction. No lock-in either way. (Decided Nov 20, 2026.)
 - **Health check:** a `/health` endpoint so Docker can restart the app if it stops responding.
-- **Demo data:** a command seeds an install with a fake person's accounts and history. Development needs it from Milestone 4 anyway, and it makes the README screenshots, the website, and YouTube footage without showing real money. A public hosted demo isn't needed, since anyone can self-host one.
+- **Demo data:** a command seeds an install with a fake person's accounts and history. Development needs it from Milestone 4 anyway, and it makes the README screenshots and the project website without showing real money. A public hosted demo isn't needed, since anyone can self-host one.
 
-### Performance (Sean's decision, Nov 20, 2026)
+### Performance (decided Nov 20, 2026)
 
 Slowness in self-hosted finance apps usually comes from the database and the UI, not the language: missing indexes (Firefly III) and transaction lists with no pagination (Maybe). So speed is designed in and checked, not hoped for.
 
@@ -270,14 +270,14 @@ Slowness in self-hosted finance apps usually comes from the database and the UI,
 - **No totals on page load.** Net worth, history, and ranks read daily snapshots; monthly spending and category totals are precomputed when transactions change, never summed across all history per request.
 - **Memory:** the JVM's heap is capped in the container image so the app stays inside the 1 GB budget. A GraalVM native image is a later option, not a v1 plan, because its closed-world rules conflict with turning providers on and off by configuration.
 
-### Accessibility and formatting (Sean's decisions, Nov 20, 2026)
+### Accessibility and formatting (decided Nov 20, 2026)
 
 - Every page works by keyboard alone, with a visible focus ring. Text and controls meet WCAG AA contrast in light and dark mode.
 - Every chart has a data table behind it that screen readers can reach, and color is never the only signal (gains and debt also carry a sign or label).
 - Money, dates, and percentages are formatted with the browser's `Intl` APIs for the user's locale, never by hand.
 - The UI is English-only in v1, but all text lives in one place per feature, so a French translation (for Quebec) can be added without hunting through components.
 
-### AI providers (Sean's decision, Nov 19, 2026)
+### AI providers (decided Nov 19, 2026)
 
 - The AI sits behind the `AiClient` interface, built on Spring AI, which gives one chat API across Anthropic, OpenAI, Ollama, and others. A self-hosted install picks Anthropic, OpenAI, or any OpenAI-compatible endpoint (base URL, model, optional key), which covers OpenRouter, Groq, LM Studio, vLLM, and Ollama. See [ADR 0008](adr/0008-swappable-ai-providers.md).
 - The hosted version uses Claude (Haiku by default, Sonnet for hard questions) with prompt caching. If Spring AI's Anthropic support lacks a Claude feature the hosted version needs, the Claude path can use the official Anthropic SDK behind the same interface.
@@ -285,20 +285,20 @@ Slowness in self-hosted finance apps usually comes from the database and the UI,
 - With a local model (Ollama), financial data never leaves the server. The privacy screen names whichever provider is configured.
 - The context is built on the server and sent in the prompt, so v1 doesn't require a model with tool calling. A small local model may word answers less well, but it can't change the numbers, since those come from code.
 
-### Categories and transfers (Sean's decisions, Nov 20, 2026)
+### Categories and transfers (decided Nov 20, 2026)
 
 Spending, bill types, recurring-bill detection, and Gold's target all depend on categories, and only Plaid supplies them. SimpleFIN and imported files don't. So every transaction gets a category from the same pipeline, whatever its source.
 
 - **Where a category comes from, in order:** a category the user set, then the user's own rules, then the starter rules, then the provider's category (Plaid's, mapped to the app's list), then an AI suggestion. Each transaction stores which of these set it.
 - **Starter rules** ship with the app as data (like rank thresholds): merchant patterns for common categories (rent and mortgage servicers, auto lenders, utilities, groceries, gas, payroll deposits, and so on). They can be updated without a release.
-- **AI suggestions:** for transactions nothing else categorized, the AI suggests a category and the user confirms or changes it in a short review list. Nothing counts as spending in a new category until it's confirmed. With no AI configured, those transactions wait in the same list as "Uncategorized." (Claude's call: confirmed by the user, not applied silently, because categories decide Gold's target and the bill cards.)
-- **Changing a category** offers "Always do this for [merchant]," which saves a user rule. (Claude's call.)
-- **Transfers between your own accounts** are matched: same amount with opposite signs, in two of your accounts, within 5 days. A match is shown for the user to confirm, then both sides are marked as a transfer and left out of spending and income. Credit card payments and money moved into investment accounts are matched the same way. This works across sources (a CSV from one bank and Plaid on another). Matching rules are test-first, next to duplicate detection. (The 5-day window is Claude's call.)
-- **Pending transactions:** Plaid and SimpleFIN return pending transactions, and when one posts it often gets a new ID and sometimes a new amount (a restaurant tip). Each transaction stores a pending flag; when the posted version arrives it replaces the pending one instead of duplicating it, and anything still pending after 14 days is dropped. Pending transactions show on Account detail but never count in spending, income, or rank math. (Sean's decision, Nov 20, 2026; the 14-day cutoff is Claude's call.)
+- **AI suggestions:** for transactions nothing else categorized, the AI suggests a category and the user confirms or changes it in a short review list. Nothing counts as spending in a new category until it's confirmed. With no AI configured, those transactions wait in the same list as "Uncategorized." (Confirmed by the user, not applied silently, because categories decide Gold's target and the bill cards.)
+- **Changing a category** offers "Always do this for [merchant]," which saves a user rule.
+- **Transfers between your own accounts** are matched: same amount with opposite signs, in two of your accounts, within 5 days. A match is shown for the user to confirm, then both sides are marked as a transfer and left out of spending and income. Credit card payments and money moved into investment accounts are matched the same way. This works across sources (a CSV from one bank and Plaid on another). Matching rules are test-first, next to duplicate detection.
+- **Pending transactions:** Plaid and SimpleFIN return pending transactions, and when one posts it often gets a new ID and sometimes a new amount (a restaurant tip). Each transaction stores a pending flag; when the posted version arrives it replaces the pending one instead of duplicating it, and anything still pending after 14 days is dropped. Pending transactions show on Account detail but never count in spending, income, or rank math. (Decided Nov 20, 2026.)
 - **Refunds** reduce spending in the category of the purchase; they never count as income. A refund that can't be matched to a purchase takes the category its rules give it, still as negative spending.
 - **Splits:** a transaction can be split into lines with their own categories and amounts that add up to the original (one store receipt into groceries and household). The table supports it in v1; the split screen can come in 1.0.
 - **Time zone:** each user has a time zone (set from the browser at first sign-in, changeable in Settings). "Today," the daily snapshot, "due in 2 days," and the 14-day rank buffer are all computed in that time zone, never in the server's.
-- **Region:** v1 supports the US and Canada only, matching SimpleFIN's coverage (Sean's decision). Each install has a home currency (USD or CAD) used for net worth and rank thresholds, and each account keeps its own currency. Canadians often hold a USD account, so an account in the other currency is converted to the home currency at that day's exchange rate, and its row shows both amounts and the rate. **A missing rate is never treated as 1:1:** the app uses the last known rate and says how old it is. Daily USD/CAD rates come from a free official source (the Bank of Canada publishes them) and are stored in an `exchange_rates` table, so history converts at each day's rate. (Sean's decision, Nov 20, 2026; the rate source is Claude's call.)
+- **Region:** v1 supports the US and Canada only, matching SimpleFIN's coverage. Each install has a home currency (USD or CAD) used for net worth and rank thresholds, and each account keeps its own currency. Canadians often hold a USD account, so an account in the other currency is converted to the home currency at that day's exchange rate, and its row shows both amounts and the rate. **A missing rate is never treated as 1:1:** the app uses the last known rate and says how old it is. Daily USD/CAD rates come from a free official source (the Bank of Canada publishes them) and are stored in an `exchange_rates` table, so history converts at each day's rate. (Decided Nov 20, 2026.)
 
 ### Data model
 
@@ -328,7 +328,7 @@ Spending, bill types, recurring-bill detection, and Gold's target all depend on 
 - On each question, the server builds the context: the current rank and what the next rank needs, the plan (steps in order plus notes), current balances, net worth with 30- and 90-day change, each step's progress and projected finish date at the recent savings rate, the page the question was asked from, and recent chat turns.
 - **All numbers are computed in code, never by the model.** The model explains and recommends from those numbers. That keeps "when do I hit $10k" consistent and checkable.
 - The system prompt tells the model to answer within the plan and to flag when a question conflicts with it. When a goal isn't reachable, it presents the code-computed options (timeline, goal size, spending, and income only where it applies) and lets the user choose; it never defaults to "make more money."
-- The AI can **suggest** a plan change (for example, raise the emergency fund target after moving out). The suggestion shows as a card Sean accepts or dismisses. The model never edits the plan directly.
+- The AI can **suggest** a plan change (for example, raise the emergency fund target after moving out). The suggestion shows as a card the user accepts or dismisses. The model never edits the plan directly.
 
 ### Security and hosting
 
@@ -338,7 +338,7 @@ Spending, bill types, recurring-bill detection, and Gold's target all depend on 
 - GitHub's free security features are on from the first commit: secret scanning, push protection, Dependabot alerts and updates, and CodeQL code scanning.
 - Desktop web app first, with a responsive layout so it still works in a phone browser. No service worker or browser notifications in v1.
 
-### Gaps closed (Sean's decisions)
+### Gaps closed
 
 - **Assets Plaid can't see:** a fourth Home card, Property & other. A home is added by address and valued automatically by a property-data API (RentCast offers value estimates from an address on self-serve plans; Zillow's Zestimate API is by request only), refreshed monthly, with an optional linked mortgage and a manual override. Cars and other assets are entered by hand. **Both count toward net worth and ranks.** ([RentCast docs](https://developers.rentcast.io/reference/property-valuation), [Zillow API access](https://www.openwebninja.com/blog/zillow-api))
 - **Stale and unchanged balances:** rank checks always use each account's last known balance, whether it's a broken connection, a hand-entered account, or a balance that simply hasn't moved. Nothing is paused or excluded.
@@ -348,7 +348,7 @@ Spending, bill types, recurring-bill detection, and Gold's target all depend on 
 - **AI guardrails:** a "not financial advice" line on answers, a monthly cap on AI cost per user, and a clear note that your numbers are sent to the AI to answer questions.
 - **Your data:** export your full history as a spreadsheet, and delete your account, which also disconnects every provider and removes stored tokens.
 - **Passkey recovery:** register a backup passkey, plus an email recovery code.
-- **Sign in with OIDC (self-hosted):** an optional login through the user's own identity provider (Authentik, Authelia, Keycloak, Google, and so on), next to passkeys, configured by environment variables. It's the top open request in Firefly III and the top request in Wealthfolio. Spring Security's OAuth2 login handles it. (Sean's decision, Nov 20, 2026.)
+- **Sign in with OIDC (self-hosted):** an optional login through the user's own identity provider (Authentik, Authelia, Keycloak, Google, and so on), next to passkeys, configured by environment variables. It's the top open request in Firefly III and the top request in Wealthfolio. Spring Security's OAuth2 login handles it. (Decided Nov 20, 2026.)
 - **Dark mode:** Light, Dark, or Match system in Settings. The purple accent lightens for text on dark backgrounds. See the dark Home mockup.
 - **Retirement accounts count at full balance** in net worth and ranks, even though 401(k) money hasn't been taxed yet.
 
@@ -356,7 +356,7 @@ Spending, bill types, recurring-bill detection, and Gold's target all depend on 
 
 **V2: "Why it moved" on Home, plus progress notifications (once about 4 weeks of snapshots exist)**
 
-- A small line under Home's net worth replaces "+$1,240 this week" and breaks each weekly change into market movement, money Sean moved in or out, and debt paydown. For example: "+$1,240 this week: $800 markets, $500 into the HYSA, -$60 loan interest." Separating contributions from gains needs Plaid transactions and investment transactions.
+- A small line under Home's net worth replaces "+$1,240 this week" and breaks each weekly change into market movement, money the user moved in or out, and debt paydown. For example: "+$1,240 this week: $800 markets, $500 into the HYSA, -$60 loan interest." Separating contributions from gains needs Plaid transactions and investment transactions.
 - Tapping that line shows one line of market context, such as how the S&P 500 moved and which of the user's funds followed it. No single-company headlines unless they are a huge part of the market movement.
 - Progress updates (a goal reached, crossing 90% of a target, a payoff date moving earlier or later) arrive as notifications in the in-app inbox (push comes with the phone app). There is no feed list.
 - Stale or hand-entered balances are flagged on Home, not in a feed.
@@ -372,7 +372,7 @@ Spending, bill types, recurring-bill detection, and Gold's target all depend on 
 **V2: Recurring bills (part of the Money screen)**
 
 - Recurring charges (auto loan, insurance, phone, subscriptions, and rent after the move-out) are listed with amount, schedule, and Paid or Due status for the month.
-- Detection: the app proposes recurring charges from repeating Plaid transactions and flags them "Auto-detected" until Sean confirms. He can also add a bill by hand or mark any transaction as recurring.
+- Detection: the app proposes recurring charges from repeating Plaid transactions and flags them "Auto-detected" until the user confirms. He can also add a bill by hand or mark any transaction as recurring.
 - Bills still due this month are subtracted before the "free for your plan" number, and shown as their own hatched segment on the split bar.
 - Paid bills count in Spent. Other spending is shown separately by category.
 - The AI knows the bills too, so "can I afford X" answers account for what's still due.
@@ -390,9 +390,9 @@ Spending, bill types, recurring-bill detection, and Gold's target all depend on 
 - **Rules:** a toggle per type in Settings & accounts; quiet hours (default 10 PM to 7 AM), with held alerts delivered after; a cap of 2 to 3 a day; amounts left out of emails by default.
 - **Built for the mobile app later:** one notification service decides what to send, and each delivery channel (the in-app inbox and email now, the phone push services later) sits behind it, so adding the mobile app means adding a channel, not rewriting the logic.
 
-* **In-app inbox.** A bell with an unread count sits top-right on every page and opens a Notifications page. It's the main place alerts live in the web app. The page groups alerts by Today, This week, and Earlier, filters by All, Unread, or Action needed, and lets Sean act right there (Reconnect, Confirm a bill). Inside the app, behind the login, amounts are shown in full. Notifications are kept for 90 days. A notifications table backs it, and email (and later phone push) sends from the same records.
+* **In-app inbox.** A bell with an unread count sits top-right on every page and opens a Notifications page. It's the main place alerts live in the web app. The page groups alerts by Today, This week, and Earlier, filters by All, Unread, or Action needed, and lets the user act right there (Reconnect, Confirm a bill). Inside the app, behind the login, amounts are shown in full. Notifications are kept for 90 days. A notifications table backs it, and email (and later phone push) sends from the same records.
 
-**V2: Investment holdings (Sean's decision, Nov 20, 2026)**
+**V2: Investment holdings (decided Nov 20, 2026)**
 
 - Holdings show only for accounts linked through Plaid, using Plaid Investments: each position's name, ticker, quantity, the brokerage's price and value, and cost basis (with tax lots where the brokerage provides them). No market-data service is used, so nothing depends on free price feeds that break.
 - SimpleFIN, imported, and manual investment accounts stay balance-only. SimpleFIN's account data has no holdings.
@@ -402,11 +402,11 @@ Spending, bill types, recurring-bill detection, and Gold's target all depend on 
 
 **V2: How you compare**
 
-The How you compare tab on the Ranks page, plus the per-rank "X% have reached this" lines on the ladder. It shows how rare Sean's position is in the U.S., a shareable feature neither Monarch nor Origin has.
+The How you compare tab on the Ranks page, plus the per-rank "X% have reached this" lines on the ladder. It shows how rare the user's position is in the U.S., a shareable feature neither Monarch nor Origin has.
 
 - Profile: age, sex, marital status, net worth (from the app), and monthly income (entered or inferred from deposits).
 - Headline: "About 1 in N unmarried men under 35 have both your income and your net worth or higher."
-- **Where each number comes from** (Sean's decision, Nov 21, 2026). A figure that combines traits must come from one survey that records all of them, because combining separate surveys ignores how the traits move together (income and net worth are correlated).
+- **Where each number comes from** (decided Nov 21, 2026). A figure that combines traits must come from one survey that records all of them, because combining separate surveys ignores how the traits move together (income and net worth are correlated).
   - **Net worth percentile, and the joint "1 in N" headline:** SIPP (the Census household-finance survey), which records both income and wealth for the same people. Compared against unmarried men heading their own household in the user's age group, since wealth is measured per household and a single person's household wealth is all theirs.
   - **Income-only percentile:** the Census Current Population Survey (its Annual Social and Economic Supplement), which records income per person and has the largest sample.
   - **Per-rank shares ("X% have reached Gold"):** the Fed's Survey of Consumer Finances (SCF), the only one of the three with liquid savings, debt with interest rates, and spending in the same record. Ranks stack, so a share must test every rank's requirement on the same household at once. When the user's group has too few survey records for a reliable share, the app uses the next broader group (for example, all adults under 35) and names the group it used.
@@ -414,7 +414,7 @@ The How you compare tab on the Ranks page, plus the per-rank "X% have reached th
 - **Never multiply separate percentages,** and never combine two surveys into one figure. Use the public microdata (IPUMS makes Census files easier) with the survey's weights.
 - Open question: how SIPP counts adults who live with their parents. Check its documentation before relying on it.
 
-**How the comparison data stays current** (Claude's calls)
+**How the comparison data stays current**
 
 - **An offline pipeline in the repo** (`tools/peer-data/`) downloads each survey's public microdata, applies the survey weights, and writes small lookup tables: percentiles by group, and per-rank shares by group. It never runs inside the app, and the raw survey files are never committed, only the script and its output.
 - **The output ships as data, like rank thresholds:** a versioned file loaded into a `peer_benchmarks` table (group, metric, value, percentile or share, source survey, survey year, sample size). Self-hosters get new numbers with the next release; the hosted version gets them on deploy. No install ever downloads survey data itself.
@@ -423,27 +423,27 @@ The How you compare tab on the Ranks page, plus the per-rank "X% have reached th
 - **The app always shows its source,** for example "Based on the 2025 Survey of Consumer Finances." When an update shifts someone's percentile or share, the app says the comparison data was updated, so a change doesn't look like the user's money moved.
 - U.S. only at first; other countries need their own data sources.
 
-**Later (Sean's decisions, Nov 20, 2026)**
+**Later (decided Nov 20, 2026)**
 
 - **Several users per install:** separate logins on one server for a household, each with private accounts, ranks, and plans (no shared accounts). Every table already carries user_id, so this adds signup and an admin role, not a rewrite.
 
 **Later, only if it becomes a business**
 
 - Signup, a paid Plaid plan, multi-user, billing, and a privacy policy and terms. Planned pricing: one plan with a free trial (14 days), then $9.99 a month or $99.99 a year. Everything is included; the AI cost cap above is a fair-use safeguard, not a tier limit. That's in line with Monarch ($99.99 a year), Copilot ($95 a year), and Origin ($99 a year, with its AI Advisor included in the membership). Possible later tiers: $10 with limited AI and $25 with unlimited AI plus extras.
-- **Fair billing** (from the competitor research; Sean's decision, Nov 18, 2026): no teaser prices that jump after the first year; any price increase is announced at least 60 days ahead and never applies to a renewal already charged; a reminder email goes out 7 days before an annual renewal.
+- **Fair billing** (from the competitor research; decided Nov 18, 2026): no teaser prices that jump after the first year; any price increase is announced at least 60 days ahead and never applies to a renewal already charged; a reminder email goes out 7 days before an annual renewal.
 - **Cancel in Settings, with one confirmation.** Settings has a Cancel subscription button that opens a single "Are you sure?" screen showing what ends and when access stops, then confirms. No retention maze, no required call or chat, and no extra offers in the way. Export stays available until access ends.
 - A native phone app (bottom tabs, push notifications) once the web app proves itself; the phone mockups are its reference.
 
-## Decided vs left to the builder
+## Decision log and open questions
 
-**Sean decided**
+**Product decisions**
 
 - A personal tool first, with a business possible later.
 - v1 is the first demoable product; 1.0 is the first public, self-hostable release (see Releases).
 - Plaid for data in. Updated Nov 19, 2026: Plaid and SimpleFIN both in 1.0, plus CSV, OFX, and QIF import, behind a swappable provider interface.
 - Easy to self-host, with the AI provider swappable (Anthropic, OpenAI, or any OpenAI-compatible endpoint, including local models). The app works without AI.
 - Desktop web app first; a native phone app later.
-- Net worth front and center; the AI knows his goals and keeps him focused.
+- Net worth front and center; the AI knows the user's goals and keeps them focused.
 - News means "why your net worth moved", not headlines.
 - V1 = approach A (net worth first), with ranks as the main feature: Iron to Legend, real demotion with a 14-day buffer, and Legend meaning financial independence.
 - Rank steps are built per account, locked in ladder order, and can't be moved or removed; personal goals go between them.
@@ -452,24 +452,24 @@ The How you compare tab on the Ranks page, plus the per-rank "X% have reached th
 - Black, white, and purple theme; net worth always first on Home, with the Road to Legend band below the accounts.
 - Pricing (if it becomes a business): free trial, then $9.99 a month or $99.99 a year.
 
-**Claude's calls (approved by Sean, Nov 18, 2026)**
+**Technical and detailed decisions (Nov 18, 2026)**
 
-- Stack: a Java and Spring Boot backend (Sean's decision), with a React/Vite/TanStack Query/Tailwind frontend in TypeScript, PostgreSQL, deployed on AWS. Money is stored as BigDecimal and the daily sync runs as a Spring @Scheduled job. The backend publishes an OpenAPI spec and the frontend's TypeScript types are generated from it, so types aren't kept in sync by hand. It uses the official Plaid Java SDK and Spring AI for the AI.
+- Stack: a Java and Spring Boot backend, with a React/Vite/TanStack Query/Tailwind frontend in TypeScript, PostgreSQL, deployed on AWS. Money is stored as BigDecimal and the daily sync runs as a Spring @Scheduled job. The backend publishes an OpenAPI spec and the frontend's TypeScript types are generated from it, so types aren't kept in sync by hand. It uses the official Plaid Java SDK and Spring AI for the AI.
 - The hosted version's AI is the Claude API; self-hosters can configure another provider.
 - Single-user passkey login. Provider tokens encrypted, with the key in AWS KMS (hosted) or an environment variable (self-hosted).
 - Manual entry for any account: cash, investment, or debt, whether or not Plaid can connect it.
 - Open for later: the $100k, $250k, and $500k thresholds lose value with inflation. They're stored as data, so they can be raised; before raising them, decide whether people already holding a rank keep it.
 - user_id on every table from day one.
 - The AI suggests plan changes and never edits the plan itself.
-- "Recent savings rate" for projections = the 90-day change in cash accounts plus debt paid down, plus investment contributions (from Plaid investment transactions, or the monthly contribution entered for other investment accounts; money moved between investment accounts isn't counted twice), with an optional monthly figure Sean can set on the Plan page to override it.
+- "Recent savings rate" for projections = the 90-day change in cash accounts plus debt paid down, plus investment contributions (from Plaid investment transactions, or the monthly contribution entered for other investment accounts; money moved between investment accounts isn't counted twice), with an optional monthly figure the user can set on the Plan page to override it.
 - Build starts in January 2027.
 - Ranks and generated plan steps are in v1, because they're the main feature. The per-rank peer percentages and the How you compare data come in v2, since they need offline survey processing.
 - Plaid Transactions and Liabilities are in v1: Account detail needs transactions, and debt steps need APRs.
-- Gold's target is 3 months of your actual spending (3 × your median monthly spending over the last 6 months, bills included; see How the numbers are read), with no dollar floor, so a frugal saver isn't held back. Gold can't unlock until the app has 60 days of spending history, which the transaction pull at signup usually provides on day one. A personal goal can push the target toward 6 months. (Sean's decision, Nov 18, 2026; replaces the earlier $10,000 floor.)
-- Platinum's "15% of income" uses income that actually arrived (paychecks plus per diem) over the last 90 days. It counts money invested anywhere, not just retirement accounts: 401(k) and IRA contributions, deposits into a taxable brokerage, and HSA investments (Sean's decision, Nov 18, 2026). Contributions come from Plaid investment transactions; for a hand-entered investment account, the user enters a monthly contribution. Money that moves between investment accounts isn't counted twice.
+- Gold's target is 3 months of your actual spending (3 × your median monthly spending over the last 6 months, bills included; see How the numbers are read), with no dollar floor, so a frugal saver isn't held back. Gold can't unlock until the app has 60 days of spending history, which the transaction pull at signup usually provides on day one. A personal goal can push the target toward 6 months. (Decided Nov 18, 2026; replaces the earlier $10,000 floor.)
+- Platinum's "15% of income" uses income that actually arrived (paychecks plus per diem) over the last 90 days. It counts money invested anywhere, not just retirement accounts: 401(k) and IRA contributions, deposits into a taxable brokerage, and HSA investments (decided Nov 18, 2026). Contributions come from Plaid investment transactions; for a hand-entered investment account, the user enters a monthly contribution. Money that moves between investment accounts isn't counted twice.
 - Free trial length: 14 days.
 
-**Left to the builder**
+**Open, decided during the build**
 
 - Which default model, prompt wording, and how many chat turns to include.
 - Charting library, visual style, and the time the daily sync runs.

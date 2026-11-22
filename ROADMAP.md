@@ -34,4 +34,4 @@ Each milestone ends with software you can run, and each gets its own step-by-ste
 
 **After 1.0 (v2 and later, from the design doc):** several users per install; investment holdings for Plaid-linked accounts; "Why it moved" on Home; the Money screen with budget, bills, and set-asides; progress notifications; How you compare, with offline SIPP/CPS processing; and the per-rank peer percentages.
 
-**Interview-prep angle.** Each milestone gives you a story to tell: Spring Security and WebAuthn (1), webhooks, idempotency, and encryption (2), rules engines, matching logic, and BigDecimal money math (3), a rules engine with tests (4), domain modeling (5), LLM integration with guardrails (6), the adapter pattern and file parsing (8), and shipping a self-hostable Docker image (9).
+**Technical highlights by milestone.** Spring Security and WebAuthn (1), webhooks, idempotency, and encryption (2), rules engines, matching logic, and BigDecimal money math (3), a rules engine with tests (4), domain modeling (5), LLM integration with guardrails (6), the adapter pattern and file parsing (8), and shipping a self-hostable Docker image (9).
