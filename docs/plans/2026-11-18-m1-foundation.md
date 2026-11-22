@@ -186,7 +186,7 @@ See ADR 0010. Spring Security registers passkeys only for a signed-in user, so t
 
 - [ ] **Step 1: Write the failing tests.** `SecurityTest`, `SetupTest`, and `SetupNotConfiguredTest` use `@SpringBootTest @AutoConfigureMockMvc @Import(TestcontainersConfiguration.class)` and delete from `user_credentials`, `user_entities`, and `users` after each test, since MockMvc requests commit.
   - `SecurityTest.apiRequiresAuth`: `GET /api/v1/me` without a session → `401`.
-  - `SecurityTest.anonymousCannotRequestRegistrationOptions`: `POST /webauthn/register/options` with CSRF and no session → `401`.
+  - `SecurityTest.anonymousCannotRequestRegistrationOptions`: `POST /webauthn/register/options` with CSRF and no session → refused with a 4xx (Spring's registration filter answers `400` before the `401` entry point runs), and no `user_entities` row is created.
   - `SecurityTest.postWithoutCsrfIsForbidden`: with `@WithMockUser`, `POST /logout` without a CSRF token → `403`.
   - `SetupTest.wrongCodeIsRejected`: → `401 invalid_setup_code`, and no `users` row.
   - `SetupTest.rightCodeSignsInTheOwner`: → `204` and one `users` row; with the returned session, `POST /webauthn/register/options` → `200`.

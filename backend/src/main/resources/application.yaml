@@ -18,6 +18,20 @@ server:
   servlet:
     session:
       timeout: 30d
+      cookie:
+        same-site: lax
+        http-only: true
+        secure: true # overridden to false in application-dev.yaml (local http)
+
+app:
+  owner:
+    email: ${OWNER_EMAIL:owner@example.com}
+    display-name: ${OWNER_DISPLAY_NAME:Owner}
+  setup:
+    code: ${SETUP_CODE:} # first-run setup code (ADR 0010); at least 20 characters when set
+  webauthn:
+    rp-id: ${WEBAUTHN_RP_ID:localhost} # the domain passkeys are tied to; every install sets its own
+    origins: ${WEBAUTHN_ORIGINS:http://localhost:5173,http://localhost:8080}
 
 management:
   endpoints:
