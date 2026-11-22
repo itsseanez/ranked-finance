@@ -1,0 +1,20 @@
+# Postgres for local development. Milestone 9 adds the app service here, so `docker compose up` self-hosts the whole app.
+services:
+  db:
+    image: postgres:19
+    environment:
+      POSTGRES_DB: rankedfinance
+      POSTGRES_USER: rankedfinance
+      POSTGRES_PASSWORD: rankedfinance
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rankedfinance -d rankedfinance"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+volumes:
+  db-data:

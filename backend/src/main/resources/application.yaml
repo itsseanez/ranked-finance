@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: ranked-finance
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/rankedfinance}
+    username: ${DB_USER:rankedfinance}
+    password: ${DB_PASSWORD:rankedfinance}
+  flyway:
+    enabled: true
+  docker:
+    compose:
+      enabled: false # turned on only in the dev profile (application-dev.yaml)
+  mvc:
+    problemdetails:
+      enabled: true # every API error uses the RFC 9457 JSON shape (type, title, status, detail)
+
+server:
+  servlet:
+    session:
+      timeout: 30d
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health # only /actuator/health; nothing else from actuator is reachable over HTTP
+  endpoint:
+    health:
+      show-details: never # just {"status":"UP"} or DOWN, no component or database details
+
+# Logs are plain text by default (dev, tests, java -jar). Deployments switch to JSON lines
+# that log tools can search by setting the environment variable LOGGING_STRUCTURED_FORMAT_CONSOLE=ecs.

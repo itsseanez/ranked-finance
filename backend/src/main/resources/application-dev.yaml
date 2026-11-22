@@ -1,0 +1,5 @@
+spring:
+  docker:
+    compose:
+      enabled: true
+      file: ../compose.yaml # compose.yaml lives at the repo root; the app runs from backend/
