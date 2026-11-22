@@ -4,7 +4,7 @@
 - **Date:** 2026-11-19
 
 ## Context
-The code is public for trust ("read the code that touches your bank data"), as a portfolio, and to build in public. A permissive license (MIT) would let anyone sell a closed copy. Source-available licenses (FSL, BSL) can ban competing use outright but aren't open source. Rewriting software has become cheap with AI, so a license can't stop someone from building a similar product; it can stop them from taking this code closed.
+The code is public for trust ("read the code that touches your bank data") and to build in public. A permissive license (MIT) would let anyone sell a closed copy. Source-available licenses (FSL, BSL) can ban competing use outright but aren't open source. Rewriting software has become cheap with AI, so a license can't stop someone from building a similar product; it can stop them from taking this code closed.
 
 ## Decision
 License the code under AGPL-3.0. Require a contributor license agreement (CLA) for outside contributions. Protect the "Ranked Finance" name separately as a trademark.

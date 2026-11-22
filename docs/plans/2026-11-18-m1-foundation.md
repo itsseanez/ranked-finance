@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A monorepo where Sean logs in with a passkey and sees the empty desktop app shell (sidebar, top bar, page stubs), with backend and frontend tests running in CI.
+**Goal:** A monorepo where the owner logs in with a passkey and sees the empty desktop app shell (sidebar, top bar, page stubs), with backend and frontend tests running in CI.
 
 **Architecture:** A Spring Boot API (`backend/`) on PostgreSQL with Flyway migrations, and passkey login through Spring Security's built-in WebAuthn support, persisted with its JDBC repositories, using a session cookie. A React SPA (`frontend/`) talks to `/api/**` through the Vite dev proxy, and its API types are generated from the backend's OpenAPI spec. Backend code is organized by feature (`auth`, `user`, later `sync`, `imports`, `ranks`, and so on), not by layer.
 
@@ -24,11 +24,11 @@
 
 ## Review Focus
 
-1. **A stranger opens the deployed URL before or after Sean registers.** They must not be able to register a passkey and get in. Pinned in Task 3: `registrationClosedOnceACredentialExists`.
-2. **The session expires while the app is open.** The next API call returns 401, and the app should send Sean to `/login` rather than show a blank or broken page. Pinned in Task 6: `redirectsToLoginOn401`.
+1. **A stranger opens the deployed URL before or after the owner registers.** They must not be able to register a passkey and get in. Pinned in Task 3: `registrationClosedOnceACredentialExists`.
+2. **The session expires while the app is open.** The next API call returns 401, and the app should send the user to `/login` rather than show a blank or broken page. Pinned in Task 6: `redirectsToLoginOn401`.
 3. **POST without a CSRF token** (a forged request from another site) must be rejected even with a valid session. Pinned in Task 3: `postWithoutCsrfIsForbidden`.
 4. **Phone-width browser.** The shell must still be usable: the menu opens and lists every page. Checked by hand against the mockup at 390px in Task 5, Step 4 (UI layout isn't unit-tested).
-5. **Browser without passkey support, or Sean cancels the prompt.** Show a plain message, not an unhandled promise error. Pinned in Task 6: `showsMessageWhenPasskeyCancelled`.
+5. **Browser without passkey support, or the user cancels the prompt.** Show a plain message, not an unhandled promise error. Pinned in Task 6: `showsMessageWhenPasskeyCancelled`.
 
 ---
 
@@ -155,7 +155,7 @@ create table users (
     - `long count()`
 
 - [ ] **Step 1: Write the failing test** (a security rule: there is only ever one owner; plain finds and inserts get no tests of their own).
-  - `secondOwnerIsRejected`: `createOwner("sean@example.com","Sean")` succeeds; a second `createOwner` throws `IllegalStateException`; `count()` stays `1`.
+  - `secondOwnerIsRejected`: `createOwner("sean@example.com","Owner")` succeeds; a second `createOwner` throws `IllegalStateException`; `count()` stays `1`.
 - [ ] **Step 2: Run it to make sure it fails.** Run: `./mvnw test -Dtest=UserRepositoryTest`. Expected: compilation failure (no `UserRepository`).
 - [ ] **Step 3: Implement `User` and `UserRepository`.** Map rows with a `RowMapper` lambda; `createOwner` checks `count() > 0` first, in the same `@Transactional` method.
 - [ ] **Step 4: Run the test to make sure it passes.** Expected: PASS.
