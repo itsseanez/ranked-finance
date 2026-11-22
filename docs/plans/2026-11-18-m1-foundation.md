@@ -24,7 +24,7 @@
 
 ## Review Focus
 
-1. **A stranger opens the deployed URL before or after the owner registers.** They must not be able to register a passkey and get in. Pinned in Task 3: `registrationClosedOnceACredentialExists`.
+1. **A stranger opens the deployed URL before or after the owner registers.** They must not be able to register a passkey and get in. Pinned in Task 3: `anonymousCannotRequestRegistrationOptions`, `wrongCodeIsRejected`, `setupIsClosedOnceAPasskeyExists`, and `emptyCodeNeverMatches`.
 2. **The session expires while the app is open.** The next API call returns 401, and the app should send the user to `/login` rather than show a blank or broken page. Pinned in Task 6: `redirectsToLoginOn401`.
 3. **POST without a CSRF token** (a forged request from another site) must be rejected even with a valid session. Pinned in Task 3: `postWithoutCsrfIsForbidden`.
 4. **Phone-width browser.** The shell must still be usable: the menu opens and lists every page. Checked by hand against the mockup at 390px in Task 5, Step 4 (UI layout isn't unit-tested).
@@ -55,7 +55,7 @@ ranked-finance/
         SecurityConfig.java          filter chain, webAuthn, CSRF, session
       common/                        small shared types used by several features (empty in M1)
       auth/                          one package per feature: controller, service,
-        RegistrationGate.java          repository, and records live together
+        SetupController.java           repository, and records live together
       user/
         User.java                    record
         UserRepository.java          JdbcClient-based
@@ -161,33 +161,46 @@ create table users (
 - [ ] **Step 4: Run the test to make sure it passes.** Expected: PASS.
 - [ ] **Step 5: Commit.** `git commit -am "feat(user): user record and repository"`
 
-### Task 3: Passkey login, single-user registration gate, CSRF, session
+### Task 3: Passkey login, first-run setup code, CSRF, session
+
+See ADR 0010. Spring Security registers passkeys only for a signed-in user, so the first session comes from a setup code the operator sets in `SETUP_CODE`.
 
 **Files:**
-- Create: `backend/src/main/resources/db/migration/V3__webauthn.sql`, `backend/src/main/java/com/rankedfinance/config/SecurityConfig.java`, `auth/RegistrationGate.java`
-- Modify: `backend/pom.xml` (add `org.springframework.security:spring-security-webauthn`), `application.yaml` (add `app.owner.email: ${OWNER_EMAIL:owner@example.com}`, `app.owner.display-name: ${OWNER_DISPLAY_NAME:Owner}`, `app.webauthn.rp-id: ${WEBAUTHN_RP_ID:localhost}`, `app.webauthn.origins: ${WEBAUTHN_ORIGINS:http://localhost:5173,http://localhost:8080}`; every install sets its own domain here)
-- Test: `backend/src/test/java/com/rankedfinance/config/SecurityTest.java`
+- Create: `backend/src/main/resources/db/migration/V3__webauthn.sql`, `backend/src/main/java/com/rankedfinance/config/SecurityConfig.java`, `auth/SetupController.java`, `auth/OwnerUserDetailsService.java`, `auth/SetupProperties.java`
+- Modify: `backend/pom.xml` (add `org.springframework.security:spring-security-webauthn`), `user/UserRepository.java` (add `findByEmail`), `application.yaml` (add `app.owner.email: ${OWNER_EMAIL:owner@example.com}`, `app.owner.display-name: ${OWNER_DISPLAY_NAME:Owner}`, `app.setup.code: ${SETUP_CODE:}`, `app.webauthn.rp-id: ${WEBAUTHN_RP_ID:localhost}`, `app.webauthn.origins: ${WEBAUTHN_ORIGINS:http://localhost:5173,http://localhost:8080}`; every install sets its own domain here), `application-dev.yaml` (`app.setup.code: dev-setup-code-not-secret`, `server.servlet.session.cookie.secure: false`)
+- Test: `backend/src/test/java/com/rankedfinance/config/SecurityTest.java`, `auth/SetupTest.java`, `auth/SetupNotConfiguredTest.java`, `user/UserRepositoryTest.java` (one new test)
 
 **Interfaces:**
 - Consumes: `UserRepository.createOwner`, `UserRepository.count` (Task 2).
 - Produces:
-  - Spring Security's endpoints: `POST /webauthn/register/options`, `POST /webauthn/register`, `POST /webauthn/authenticate/options`, `POST /login/webauthn`, `POST /logout`.
-  - `RegistrationGate` (a `OncePerRequestFilter` placed before the WebAuthn registration filter): lets `/webauthn/register/**` through only when `UserCredentialRepository` holds no credentials, or the request is authenticated. Otherwise it responds `403` with body `{"error":"registration_closed"}`.
-  - On the first successful registration, the owner `users` row is created from `app.owner.*` if it doesn't exist. The WebAuthn user entity's `name` = owner email, and its `id` bytes = the `users.id` UUID's bytes.
-  - All `/api/**` require authentication and return `401` (not a redirect) when unauthenticated.
+  - `UserRepository.findByEmail(String email): Optional<User>`.
+  - Spring Security's endpoints: `POST /webauthn/register/options` and `POST /webauthn/register` (signed-in users only, Spring's default), `POST /webauthn/authenticate/options`, `POST /login/webauthn`, `POST /logout` (returns `204`).
+  - `POST /api/v1/setup` with body `{"code": "..."}`, open without a session, CSRF required:
+    - `403 {"error":"setup_closed"}` if any passkey exists, whatever the code.
+    - `403 {"error":"setup_not_configured"}` if `app.setup.code` is blank. An empty code never matches.
+    - `401 {"error":"invalid_setup_code"}` if the code doesn't match (constant-time comparison with `MessageDigest.isEqual`).
+    - Otherwise: creates the owner row from `app.owner.*` if none exists, signs the owner in (new session ID, security context saved to the session), and returns `204`.
+  - `SetupProperties` (`@ConfigurationProperties("app.setup")`, `@Validated`): when the code is set, it must be at least 20 characters, or the app refuses to start.
+  - `OwnerUserDetailsService`: loads a user by email (the WebAuthn user entity's `name`) with authority `ROLE_OWNER`. Spring's passkey login uses it.
+  - Every `/api/**` path except `/api/v1/setup` requires authentication and returns `401` (not a redirect) without a session.
 
-- [ ] **Step 1: Write `V3__webauthn.sql`** by copying the PostgreSQL DDL for `user_entities` and `user_credentials` from the Spring Security WebAuthn reference ("JDBC Persistence" section) for the version Boot manages. Copy it exactly; don't hand-edit column names.
-- [ ] **Step 2: Write the failing tests** (`@SpringBootTest @AutoConfigureMockMvc @Import(TestcontainersConfiguration.class)`):
-  - `apiRequiresAuth`: `GET /api/v1/me` without a session → `401`.
-  - `registrationOpenWhenNoCredential`: `POST /webauthn/register/options` with CSRF and no session → `200`.
-  - `registrationClosedOnceACredentialExists`: save a credential through `UserCredentialRepository` (build one with `ImmutableCredentialRecord.builder()`), then the same request without a session → `403` with `registration_closed`; with `@WithMockUser` → `200`.
-  - `postWithoutCsrfIsForbidden`: with `@WithMockUser`, `POST /logout` without a CSRF token → `403`.
-- [ ] **Step 3: Run them to make sure they fail.** Run: `./mvnw test -Dtest=SecurityTest`. Expected: FAIL (default Boot security returns redirects and form login; no gate).
-- [ ] **Step 4: Implement `SecurityConfig`:** `.webAuthn(w -> w.rpName("Ranked Finance").rpId(rpId).allowedOrigins(origins))`; beans `JdbcPublicKeyCredentialUserEntityRepository` and `JdbcUserCredentialRepository` over `JdbcOperations`; `.csrf(c -> c.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()).csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))` (handler as in the Spring Security "Single-Page Applications" CSRF section); `.exceptionHandling(e -> e.defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(UNAUTHORIZED), PathPatternRequestMatcher.withDefaults().matcher("/api/**")))`; `.logout(l -> l.logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler()))`; no form login, no HTTP Basic. Session cookie: `server.servlet.session.cookie.same-site: lax`, `http-only: true`, `secure: ${COOKIE_SECURE:true}` (set `false` in a local `application-dev.yaml`).
-- [ ] **Step 5: Implement `RegistrationGate`** and the owner-row creation: listen for `AuthenticationSuccessEvent`, or wrap the registration success path, and call `createOwner` when `count() == 0`.
-- [ ] **Step 6: Run the tests to make sure they pass.** Expected: PASS (4 tests).
-- [ ] **Step 7: Manual check.** `docker compose up -d`, then `./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`. Open `http://localhost:8080/webauthn/register` (Spring's default reference page), register a passkey, then log in at `/login`. The `users` table now has one row.
-- [ ] **Step 8: Commit.** `git commit -am "feat(auth): passkey login with single-user registration gate"`
+- [ ] **Step 1: Write the failing tests.** `SecurityTest`, `SetupTest`, and `SetupNotConfiguredTest` use `@SpringBootTest @AutoConfigureMockMvc @Import(TestcontainersConfiguration.class)` and delete from `user_credentials`, `user_entities`, and `users` after each test, since MockMvc requests commit.
+  - `SecurityTest.apiRequiresAuth`: `GET /api/v1/me` without a session → `401`.
+  - `SecurityTest.anonymousCannotRequestRegistrationOptions`: `POST /webauthn/register/options` with CSRF and no session → `401`.
+  - `SecurityTest.postWithoutCsrfIsForbidden`: with `@WithMockUser`, `POST /logout` without a CSRF token → `403`.
+  - `SetupTest.wrongCodeIsRejected`: → `401 invalid_setup_code`, and no `users` row.
+  - `SetupTest.rightCodeSignsInTheOwner`: → `204` and one `users` row; with the returned session, `POST /webauthn/register/options` → `200`.
+  - `SetupTest.setupIsClosedOnceAPasskeyExists`: save a credential through `UserCredentialRepository` (built with `ImmutableCredentialRecord.builder()`), then the right code → `403 setup_closed`.
+  - `SetupNotConfiguredTest.emptyCodeNeverMatches`: with `app.setup.code` blank, `{"code":""}` → `403 setup_not_configured`.
+  - `UserRepositoryTest.findsTheOwnerByEmail`.
+- [ ] **Step 2: Run them to make sure they fail.** Run: `./mvnw test -Dtest='SecurityTest,Setup*Test,UserRepositoryTest'`. Expected: compilation failure (no `spring-security-webauthn`, no `findByEmail`).
+- [ ] **Step 3: Write `V3__webauthn.sql`** from Spring Security's `user_entities` and `user_credentials` schema (same table and column names, since `JdbcPublicKeyCredentialUserEntityRepository` and `JdbcUserCredentialRepository` query them), using `bytea` where Spring's default script uses `blob`, which Postgres doesn't have.
+- [ ] **Step 4: Implement `SecurityConfig`:** `.webAuthn(w -> w.rpName("Ranked Finance").rpId(rpId).allowedOrigins(origins))`; beans `JdbcPublicKeyCredentialUserEntityRepository` and `JdbcUserCredentialRepository` over `JdbcOperations`; CSRF for single-page apps (the `XSRF-TOKEN` cookie readable by JavaScript, the token sent back in `X-XSRF-TOKEN`, as in Spring Security's "Single-Page Applications" CSRF section); a `401` entry point for unauthenticated requests; `/api/v1/setup` and `/actuator/health` permitted; `204` on logout; no form login and no HTTP Basic. Session cookie: `server.servlet.session.cookie.same-site: lax`, `http-only: true`, `secure: true` (overridden to `false` in `application-dev.yaml`).
+- [ ] **Step 5: Implement `findByEmail`, `OwnerUserDetailsService`, `SetupProperties`, and `SetupController`.**
+- [ ] **Step 6: Run the full suite.** Run: `./mvnw verify`. Expected: all tests pass.
+- [ ] **Step 7: Commit.** `git commit -am "feat(auth): passkey-first sign-in with first-run setup code"`
+
+The browser half (entering the setup code, creating the passkey, signing in) is checked end to end in Task 6, once the login screen exists.
 
 ### Task 4: `GET /api/v1/me`, OpenAPI spec, generated frontend types
 
@@ -244,24 +257,24 @@ create table users (
 - Test: `frontend/src/lib/api-client.test.ts`, `frontend/src/features/auth/LoginPage.test.tsx`
 
 **Interfaces:**
-- Consumes: Spring Security WebAuthn endpoints (Task 3); `GET /api/v1/me` (Task 4).
+- Consumes: Spring Security WebAuthn endpoints and `POST /api/v1/setup` (Task 3); `GET /api/v1/me` (Task 4).
 - Produces:
   - `apiFetch<T>(path: string, init?: RequestInit): Promise<T>` — sends `credentials: "same-origin"`, adds `X-XSRF-TOKEN` from the `XSRF-TOKEN` cookie on non-GET requests, throws `UnauthorizedError` on 401 and `ApiError(status, body)` on other non-2xx.
   - `registerPasskey(): Promise<void>` and `loginWithPasskey(): Promise<void>` in `features/auth/passkey.ts`. Each fetches options JSON, calls `navigator.credentials.create/get` with `PublicKeyCredential.parseCreationOptionsFromJSON` / `parseRequestOptionsFromJSON`, and posts `credential.toJSON()` in the body shapes shown in Spring Security's passkeys reference. Both throw `PasskeyCancelledError` when the browser raises `NotAllowedError`, and `PasskeyUnsupportedError` when `window.PublicKeyCredential` is missing.
   - `useMe()` — a TanStack Query hook over `GET /api/v1/me`, key `["me"]`.
   - `<RequireAuth>` — renders children when `useMe` succeeds, and navigates to `/login` on `UnauthorizedError`. A global `QueryCache` `onError` does the same for any query, so session expiry mid-use also redirects.
-  - `<LoginPage>` — "Ranked Finance" title and a "Sign in with passkey" button. A secondary "Set up this device" button calls `registerPasskey` (the backend refuses it once registered, and the page shows "This app already has an owner" on `registration_closed`).
+  - `<LoginPage>` — "Ranked Finance" title and a "Continue with passkey" button. A secondary "First-time setup" link opens a step that asks for the setup code, posts it to `/api/v1/setup`, then calls `registerPasskey`. Messages: "That setup code isn't right." on `invalid_setup_code`, "This app is already set up. Sign in with your passkey." on `setup_closed`, and "Setup isn't configured on this server. Set SETUP_CODE and restart." on `setup_not_configured`.
 
 - [ ] **Step 1: Write the failing tests.**
   - `api-client.test.ts › addsCsrfHeaderOnPost`: with `document.cookie = "XSRF-TOKEN=abc"`, a POST through a mocked `fetch` carries `X-XSRF-TOKEN: abc`.
   - `api-client.test.ts › throwsUnauthorizedOn401`.
-  - `LoginPage.test.tsx › redirectsToLoginOn401`: render the app at `/` with `fetch` returning 401 for `/api/v1/me`; expect the "Sign in with passkey" button.
+  - `LoginPage.test.tsx › redirectsToLoginOn401`: render the app at `/` with `fetch` returning 401 for `/api/v1/me`; expect the "Continue with passkey" button.
   - `LoginPage.test.tsx › showsMessageWhenPasskeyCancelled`: stub `navigator.credentials.get` to reject with `DOMException("", "NotAllowedError")`; clicking sign-in shows "Sign-in was cancelled. Try again."
-  - `LoginPage.test.tsx › showsOwnerTakenMessage`: registration options return 403 `{"error":"registration_closed"}` → "This app already has an owner."
+  - `LoginPage.test.tsx › showsSetupClosedMessage`: `/api/v1/setup` returns 403 `{"error":"setup_closed"}` → "This app is already set up. Sign in with your passkey."
 - [ ] **Step 2: Run them to make sure they fail.** Run: `npx vitest run src/lib src/features/auth`. Expected: FAIL.
 - [ ] **Step 3: Implement** `lib/api-client.ts`, `features/auth/passkey.ts`, `features/auth/use-me.ts`, `features/auth/RequireAuth.tsx`, `features/auth/LoginPage.tsx`. Copy for the unsupported case: "This browser doesn't support passkeys. Try the latest Chrome, Safari, or Edge."
 - [ ] **Step 4: Run the tests to make sure they pass.** Expected: PASS (5 tests).
-- [ ] **Step 5: End-to-end manual check.** Run `docker compose up -d`, start the backend with the `dev` profile, then `npm run dev`. Open `http://localhost:5173`: you're redirected to `/login`. "Set up this device" registers a passkey, "Sign in with passkey" logs you in, and the Home stub appears inside the shell. Sessions are in memory in M1, so restarting the backend logs you out. That's expected; Spring Session JDBC comes in M7.
+- [ ] **Step 5: End-to-end manual check.** Run `docker compose up -d`, start the backend with the `dev` profile, then `npm run dev`. Open `http://localhost:5173`: you're redirected to `/login`. "First-time setup" with the dev setup code (`dev-setup-code-not-secret`) registers a passkey, "Continue with passkey" logs you in, and the Home stub appears inside the shell. Sessions are in memory in M1, so restarting the backend logs you out. That's expected; Spring Session JDBC comes in M7.
 - [ ] **Step 6: Commit.** `git commit -am "feat(web): passkey login and auth gate"`
 
 ---
