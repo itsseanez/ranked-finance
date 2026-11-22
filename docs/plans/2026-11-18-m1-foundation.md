@@ -63,7 +63,7 @@ ranked-finance/
       (later: sync/, imports/, accounts/, networth/, ranks/, plan/, ai/, notifications/)
     src/main/resources/
       application.yaml, application-dev.yaml
-      db/migration/V1__users.sql, V2__webauthn.sql
+      db/migration/V1__users.sql, V2__single_owner.sql, V3__webauthn.sql
     src/test/java/com/rankedfinance/ tests mirror the main packages
       TestcontainersConfiguration.java
       ApplicationSmokeTest.java
@@ -164,7 +164,7 @@ create table users (
 ### Task 3: Passkey login, single-user registration gate, CSRF, session
 
 **Files:**
-- Create: `backend/src/main/resources/db/migration/V2__webauthn.sql`, `backend/src/main/java/com/rankedfinance/config/SecurityConfig.java`, `auth/RegistrationGate.java`
+- Create: `backend/src/main/resources/db/migration/V3__webauthn.sql`, `backend/src/main/java/com/rankedfinance/config/SecurityConfig.java`, `auth/RegistrationGate.java`
 - Modify: `backend/pom.xml` (add `org.springframework.security:spring-security-webauthn`), `application.yaml` (add `app.owner.email: ${OWNER_EMAIL:owner@example.com}`, `app.owner.display-name: ${OWNER_DISPLAY_NAME:Owner}`, `app.webauthn.rp-id: ${WEBAUTHN_RP_ID:localhost}`, `app.webauthn.origins: ${WEBAUTHN_ORIGINS:http://localhost:5173,http://localhost:8080}`; every install sets its own domain here)
 - Test: `backend/src/test/java/com/rankedfinance/config/SecurityTest.java`
 
@@ -176,7 +176,7 @@ create table users (
   - On the first successful registration, the owner `users` row is created from `app.owner.*` if it doesn't exist. The WebAuthn user entity's `name` = owner email, and its `id` bytes = the `users.id` UUID's bytes.
   - All `/api/**` require authentication and return `401` (not a redirect) when unauthenticated.
 
-- [ ] **Step 1: Write `V2__webauthn.sql`** by copying the PostgreSQL DDL for `user_entities` and `user_credentials` from the Spring Security WebAuthn reference ("JDBC Persistence" section) for the version Boot manages. Copy it exactly; don't hand-edit column names.
+- [ ] **Step 1: Write `V3__webauthn.sql`** by copying the PostgreSQL DDL for `user_entities` and `user_credentials` from the Spring Security WebAuthn reference ("JDBC Persistence" section) for the version Boot manages. Copy it exactly; don't hand-edit column names.
 - [ ] **Step 2: Write the failing tests** (`@SpringBootTest @AutoConfigureMockMvc @Import(TestcontainersConfiguration.class)`):
   - `apiRequiresAuth`: `GET /api/v1/me` without a session → `401`.
   - `registrationOpenWhenNoCredential`: `POST /webauthn/register/options` with CSRF and no session → `200`.
