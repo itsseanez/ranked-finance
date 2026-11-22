@@ -332,7 +332,8 @@ Spending, bill types, recurring-bill detection, and Gold's target all depend on 
 
 ### Security and hosting
 
-- Login with a single passkey and a secure session cookie. There's no password to leak.
+- **Passkey-first sign-in** with a secure session cookie: no passwords and no one-time codes, so there's nothing to phish or leak. The sign-in screens follow the familiar pattern of apps like Wealthfront: email when creating the account, and "Continue with passkey" on the login screen. See [ADR 0010](adr/0010-passkey-first-sign-in.md).
+- **First-run setup code.** The first passkey can only be registered after entering the setup code the operator set in `SETUP_CODE`, so a stranger can't claim a freshly deployed instance. Once a passkey exists, setup closes for good; backup passkeys are added from a signed-in session and trigger a sign-in alert. (Decided Nov 22, 2026.)
 - Provider tokens encrypted at rest. On the hosted version the key lives in AWS KMS; on a self-hosted install it comes from an environment variable. Never in the repo or the database.
 - **Backups protect the Plaid connections.** Losing the database or the key would mean losing the Trial plan's lifetime connections. Postgres runs with automatic backups and point-in-time recovery, the KMS key is protected from deletion (deletion protection plus the maximum waiting period), and one full test restore happens before any real account is connected.
 - GitHub's free security features are on from the first commit: secret scanning, push protection, Dependabot alerts and updates, and CodeQL code scanning.
@@ -348,7 +349,7 @@ Spending, bill types, recurring-bill detection, and Gold's target all depend on 
 - **AI guardrails:** a "not financial advice" line on answers, a monthly cap on AI cost per user, and a clear note that your numbers are sent to the AI to answer questions.
 - **Your data:** export your full history as a spreadsheet, and delete your account, which also disconnects every provider and removes stored tokens.
 - **Passkey recovery:** register a backup passkey, plus an email recovery code.
-- **Sign in with OIDC (self-hosted):** an optional login through the user's own identity provider (Authentik, Authelia, Keycloak, Google, and so on), next to passkeys, configured by environment variables. It's the top open request in Firefly III and the top request in Wealthfolio. Spring Security's OAuth2 login handles it. (Decided Nov 20, 2026.)
+- **Sign in with OIDC (self-hosted):** an optional login through the user's own identity provider (Authentik, Authelia, Keycloak, Google, and so on), next to passkeys, configured by environment variables. It's the top open request in Firefly III and the top request in Wealthfolio. Spring Security's OAuth2 login handles it. (Decided Nov 20, 2026.) Accounts are linked to the provider's subject identifier in a `user_identities` table (user, provider, subject), never by email alone; when OIDC is configured, the account whose verified email equals `OWNER_EMAIL` can also complete first-run setup. (Decided Nov 22, 2026.)
 - **Dark mode:** Light, Dark, or Match system in Settings. The purple accent lightens for text on dark backgrounds. See the dark Home mockup.
 - **Retirement accounts count at full balance** in net worth and ranks, even though 401(k) money hasn't been taxed yet.
 

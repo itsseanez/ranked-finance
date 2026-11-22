@@ -3,3 +3,13 @@ spring:
     compose:
       enabled: true
       file: ../compose.yaml # compose.yaml lives at the repo root; the app runs from backend/
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false # local development runs over http
+
+app:
+  setup:
+    code: dev-setup-code-not-secret # dev only; real installs set SETUP_CODE

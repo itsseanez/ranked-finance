@@ -32,6 +32,14 @@ class UserRepositoryTest {
         assertThat(users.count()).isEqualTo(1);
     }
 
+    @Test
+    void findsTheOwnerByEmail() {
+        User owner = users.createOwner("owner@example.com", "Owner");
+
+        assertThat(users.findByEmail("owner@example.com")).contains(owner);
+        assertThat(users.findByEmail("nobody@example.com")).isEmpty();
+    }
+
     // The Java check above can lose a race (two registrations at once both see zero users),
     // so the database itself must refuse a second row, even when the check is bypassed.
     @Test

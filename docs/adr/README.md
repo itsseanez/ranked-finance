@@ -15,3 +15,4 @@ To add one, copy [template.md](template.md) to the next number. Don't rewrite an
 | [0007](0007-swappable-data-providers.md) | Swappable bank-data providers, plus file import | Accepted |
 | [0008](0008-swappable-ai-providers.md) | Swappable AI providers; the app works without AI | Accepted |
 | [0009](0009-postgresql-19-pinned.md) | PostgreSQL 19, pinned to one major version everywhere | Accepted |
+| [0010](0010-passkey-first-sign-in.md) | Passkey-first sign-in, with a setup code for the first passkey | Accepted |

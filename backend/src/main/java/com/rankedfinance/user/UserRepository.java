@@ -1,5 +1,6 @@
 package com.rankedfinance.user;
 
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -33,6 +34,21 @@ public class UserRepository {
                 .param("displayName", displayName)
                 .query(User.class)
                 .single();
+    }
+
+    /** Finds a user by sign-in email. Passkey login uses it to load the signed-in user. */
+    public Optional<User> findByEmail(String email) {
+        return jdbcClient
+                .sql(
+                        """
+                        select id, email, display_name, birth_year, sex, marital_status,
+                               living_situation, country, time_zone, home_currency
+                        from users
+                        where email = :email
+                        """)
+                .param("email", email)
+                .query(User.class)
+                .optional();
     }
 
     /**
