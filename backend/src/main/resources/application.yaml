@@ -33,6 +33,10 @@ app:
     rp-id: ${WEBAUTHN_RP_ID:localhost} # the domain passkeys are tied to; every install sets its own
     origins: ${WEBAUTHN_ORIGINS:http://localhost:5173,http://localhost:8080}
 
+springdoc:
+  api-docs:
+    enabled: false # the OpenAPI spec at /v3/api-docs exists only in dev (application-dev.yaml)
+
 management:
   endpoints:
     web:

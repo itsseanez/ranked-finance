@@ -13,3 +13,7 @@ server:
 app:
   setup:
     code: dev-setup-code-not-secret # dev only; real installs set SETUP_CODE
+
+springdoc:
+  api-docs:
+    enabled: true # serves /v3/api-docs, which `npm run gen:api` turns into TypeScript types
