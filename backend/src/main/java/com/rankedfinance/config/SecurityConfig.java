@@ -29,6 +29,9 @@ public class SecurityConfig {
                                         .permitAll()
                                         .requestMatchers("/actuator/health")
                                         .permitAll()
+                                        // Only exists in dev; see springdoc.api-docs.enabled.
+                                        .requestMatchers("/v3/api-docs/**")
+                                        .permitAll()
                                         .anyRequest()
                                         .authenticated())
                 .webAuthn(

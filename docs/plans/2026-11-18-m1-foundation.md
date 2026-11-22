@@ -205,19 +205,19 @@ The browser half (entering the setup code, creating the passkey, signing in) is 
 ### Task 4: `GET /api/v1/me`, OpenAPI spec, generated frontend types
 
 **Files:**
-- Create: `backend/src/main/java/com/rankedfinance/user/MeController.java`
-- Modify: `backend/pom.xml` (add `org.springdoc:springdoc-openapi-starter-webmvc-ui`, the version that matches Boot 4)
-- Test: none (plumbing; `/api/v1/me` without a session returning 401 is already covered by `SecurityTest.apiRequiresAuth` in Task 3)
+- Create: `backend/src/main/java/com/rankedfinance/user/MeController.java`, `user/MeResponse.java`
+- Modify: `backend/pom.xml` (add `org.springdoc:springdoc-openapi-starter-webmvc-api` 3.x, the line built for Spring Boot 4; spec only, no Swagger UI page), `application.yaml` (`springdoc.api-docs.enabled: false`), `application-dev.yaml` (`springdoc.api-docs.enabled: true`), `SecurityConfig` (permit `/v3/api-docs/**`, which exists only in dev)
+- Test: `backend/src/test/java/com/rankedfinance/user/MeControllerTest.java`: one end-to-end check that signs in through first-run setup and calls `/api/v1/me`, standing in for a manual check until the login screen exists in Task 6. The 401 without a session is covered by `SecurityTest.apiRequiresAuth` (Task 3).
 
 **Interfaces:**
-- Consumes: `UserRepository.findByEmail` (Task 2); authenticated principal name = owner email (Task 3).
+- Consumes: `UserRepository.findByEmail` (Task 3); the signed-in principal's name is the owner's email (Task 3).
 - Produces:
-  - `GET /api/v1/me` → `200` with `record MeResponse(UUID id, String displayName, String email)`.
-  - `GET /v3/api-docs` (permitted without auth in the `dev` and `test` profiles only).
+  - `GET /api/v1/me` → `200` with `record MeResponse(UUID id, String displayName, String email)`; `404` if no row, which shouldn't happen.
+  - `GET /v3/api-docs` in the `dev` profile only.
   - The npm script `gen:api` (Task 5) reads `http://localhost:8080/v3/api-docs` and writes `frontend/src/lib/api-schema.d.ts`.
 
-- [ ] **Step 1: Implement `MeController`** (`@RestController @RequestMapping("/api/v1")`, `@GetMapping("/me") MeResponse me(Principal p)`; `404` if no row, which shouldn't happen) and permit `/v3/api-docs/**` only under `@Profile({"dev","test"})`.
-- [ ] **Step 2: Check it by running it.** Start the backend with the `dev` profile, sign in with your passkey, and open `http://localhost:8080/api/v1/me`: it returns your id, name and email. `http://localhost:8080/v3/api-docs` lists `/api/v1/me`. Signed out, `/api/v1/me` returns `401`.
+- [ ] **Step 1: Write `MeControllerTest.returnsTheSignedInOwner`, `MeResponse`, and `MeController`.**
+- [ ] **Step 2: Run the suite.** Run: `./mvnw verify`. Expected: all tests pass. Then start the backend with the `dev` profile and open `http://localhost:8080/v3/api-docs`: it lists `/api/v1/me` and `/api/v1/setup`.
 - [ ] **Step 3: Commit.** `git commit -am "feat(user): add /api/v1/me and OpenAPI spec"`
 
 ### Task 5: Frontend scaffold and app shell
