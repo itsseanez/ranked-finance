@@ -4,3 +4,6 @@ design/
 CLAUDE.local.md
 .vscode/*
 !.vscode/extensions.json
+
+# Node (repo-root tooling; frontend/ has its own .gitignore)
+node_modules/
