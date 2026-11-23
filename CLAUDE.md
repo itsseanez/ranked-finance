@@ -10,7 +10,7 @@ Planned in the Milestone 1 plan; update this section once they exist (or re-run 
 - `cd frontend && npm run dev`: run the web app on :5173 (proxies `/api` to :8080)
 - `cd frontend && npx vitest run`: frontend tests
 - `cd frontend && npm run gen:api`: regenerate TypeScript API types from the backend's OpenAPI spec
-- `cd frontend && npm run format && npm run lint`: format with Prettier, then lint with ESLint
+- `cd frontend && npm run format && npm run lint`: format with Prettier, then lint with Oxlint
 - `cd backend && ./mvnw spotless:apply`: format Java (google-java-format, AOSP style)
 
 ## Where things are
@@ -19,13 +19,13 @@ Planned in the Milestone 1 plan; update this section once they exist (or re-run 
 - `docs/adr/`: architecture decision records. Add a new numbered ADR when making a hard-to-reverse technical decision (framework, library, data model, license).
 - `design/images/`: UI mockups. Local only (git-ignored); if missing, ask for a screenshot instead of guessing a layout.
 - `backend/src/main/java/com/rankedfinance/`: one package per feature (`auth`, `user`, `sync`, `imports`, `categories`, `accounts`, `networth`, `ranks`, `plan`, `ai`, `notifications`) holding its controller, service, repository, and records. `config/` is for cross-cutting configuration only; `common/` for small types several features share. Tests mirror the main packages.
-- `frontend/src/`: `app/` (providers, router, shell) → `features/<name>/` (same names as the backend) → shared `components/`, `lib/`, `styles/`. A feature never imports another feature; shared code moves to `components/` or `lib/` (ESLint enforces this). Import with the `@/` alias.
+- `frontend/src/`: `app/` (providers, router, shell) → `features/<name>/` (same names as the backend) → shared `components/`, `lib/`, `styles/`. A feature never imports another feature; shared code moves to `components/` or `lib/` (Oxlint enforces this in `frontend/.oxlintrc.json`; a new feature folder needs its own override there). Import with the `@/` alias.
 - `frontend/src/lib/api-schema.d.ts` is generated; never edit it.
 - `sync/` holds the `DataProvider` interface with one subpackage per provider (`sync/plaid`, `sync/simplefin`). `imports/` parses CSV, OFX/QFX, and QIF files. Nothing outside `sync/` and `imports/` touches provider types; everything else reads the normalized tables.
 - New feature? Add the backend package and the matching `features/<name>/` folder together.
 
 ## Stack
-Java 25, Spring Boot 4.x, Maven, Spring Security passkeys (spring-security-webauthn), Spring JDBC (`JdbcClient`), Flyway, PostgreSQL 19, Testcontainers. React 19, TypeScript, Vite, Tailwind v4, TanStack Query, Vitest. Plaid Java SDK, SimpleFIN over HTTP, Spring AI (Anthropic, OpenAI, OpenAI-compatible). Docker image for self-hosting; AWS for the hosted version.
+Java 25, Spring Boot 4.x, Maven, Spring Security passkeys (spring-security-webauthn), Spring JDBC (`JdbcClient`), Flyway, PostgreSQL 19, Testcontainers. React 19, TypeScript 7 (with TypeScript 6 for tools that need its API, see ADR 0011), Vite, React Router, Tailwind v4, TanStack Query, Vitest. Plaid Java SDK, SimpleFIN over HTTP, Spring AI (Anthropic, OpenAI, OpenAI-compatible). Docker image for self-hosting; AWS for the hosted version.
 
 ## Rules that must not break
 - **Numbers are computed in code, never by the AI.** The model explains numbers the server computed. It never decides a rank and never edits the plan; it can only propose a suggestion card.
@@ -46,7 +46,7 @@ Java 25, Spring Boot 4.x, Maven, Spring Security passkeys (spring-security-webau
 - **Accessible and locale-ready:** keyboard-usable with visible focus, WCAG AA contrast, a data table behind every chart, color never the only signal. Format money and dates with `Intl`; keep UI text in one place per feature.
 - **Speed is a requirement:** pages under 500 ms with 10 years of data (the demo seed) in 1 GB of RAM. Every new table's migration adds the indexes its queries need. Transaction lists are paginated on the server and virtualized on screen. Never sum all history per request; read snapshots or precomputed totals.
 - **Self-hostable.** All config comes from environment variables. AWS services are for the hosted deployment only; the code never requires them.
-- **Formatting is automatic.** Prettier (frontend) and Spotless (backend) own formatting; ESLint is for code quality only. Don't hand-format or add style rules to ESLint. Hooks and CI must pass; never use `--no-verify`.
+- **Formatting is automatic.** Prettier (frontend) and Spotless (backend) own formatting; Oxlint is for code quality only. Don't hand-format or add style rules to the linter. Hooks and CI must pass; never use `--no-verify`.
 - **Schema changes are new Flyway files.** Never edit a migration that has already run; never let Hibernate create tables.
 
 ## Security

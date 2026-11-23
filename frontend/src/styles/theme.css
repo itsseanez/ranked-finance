@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+/* Design tokens (see CLAUDE.md). Tailwind turns each one into utilities: bg-accent, text-debt, border-line... */
+@theme {
+  --color-accent: #5b3fd6;
+  --color-accent-tint: #f1eefc;
+  --color-gain: #15803d;
+  --color-debt: #b91c1c;
+  --color-warn: #a16207;
+  --color-ink: #0a0a0a;
+  --color-page: #fafafa;
+  --color-card: #ffffff;
+  --color-line: #e3e3e3;
+
+  --font-sans: Inter, system-ui, sans-serif;
+}
+
+body {
+  @apply bg-page font-sans text-ink antialiased;
+}

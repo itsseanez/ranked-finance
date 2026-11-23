@@ -29,3 +29,22 @@ jobs:
           cache: maven
       # Tests (Testcontainers uses the runner's Docker), the module check, and the Spotless format check.
       - run: ./mvnw -B verify
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npx tsc -b
+      - run: npx vitest run --passWithNoTests
+
