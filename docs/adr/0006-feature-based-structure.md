@@ -4,7 +4,7 @@
 - **Date:** 2026-11-20
 
 ## Context
-The repo holds a Spring Boot backend and a React frontend, and will grow by feature (Plaid sync, net worth, ranks, plan, AI). Layer-based layouts (`controller/`, `service/`, or `components/`, `hooks/`) scatter one feature across many folders. Common guidance for Spring Boot is package-by-feature with cross-cutting configuration in a `config/` package; for React, bulletproof-react's `app/` + `features/` + shared folders with one-way imports enforced by ESLint.
+The repo holds a Spring Boot backend and a React frontend, and will grow by feature (Plaid sync, net worth, ranks, plan, AI). Layer-based layouts (`controller/`, `service/`, or `components/`, `hooks/`) scatter one feature across many folders. Common guidance for Spring Boot is package-by-feature with cross-cutting configuration in a `config/` package; for React, bulletproof-react's `app/` + `features/` + shared folders with one-way imports enforced by the linter (Oxlint since [0011](0011-frontend-linting-and-typescript-version.md)).
 
 ## Decision
 - Monorepo with `backend/` and `frontend/` at the root; repo-wide tooling (Git hooks, commitlint) in a small root `package.json`.

@@ -1,0 +1,25 @@
+name: PR title
+
+# Squash merges turn the PR title into the commit on main, which release-please reads,
+# so the title must follow Conventional Commits too. Re-checked when the title is edited.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # The title goes through an environment variable, never straight into the script, so it can't inject shell code.
+      - run: echo "$PR_TITLE" | npx commitlint --verbose
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}

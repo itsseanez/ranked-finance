@@ -10,9 +10,10 @@ To add one, copy [template.md](template.md) to the next number. Don't rewrite an
 | [0002](0002-agpl-3-license.md) | AGPL-3.0 license | Accepted |
 | [0003](0003-flyway-for-schema-migrations.md) | Flyway for schema migrations | Accepted |
 | [0004](0004-database-access-approach.md) | Database access with `JdbcClient` and plain SQL | Accepted |
-| [0005](0005-formatting-and-linting.md) | Formatting and linting (Prettier, ESLint, Spotless) | Accepted |
+| [0005](0005-formatting-and-linting.md) | Formatting and linting (Prettier, ESLint, Spotless) | Frontend linting superseded by 0011 |
 | [0006](0006-feature-based-structure.md) | Feature-based structure on both sides | Accepted |
 | [0007](0007-swappable-data-providers.md) | Swappable bank-data providers, plus file import | Accepted |
 | [0008](0008-swappable-ai-providers.md) | Swappable AI providers; the app works without AI | Accepted |
 | [0009](0009-postgresql-19-pinned.md) | PostgreSQL 19, pinned to one major version everywhere | Accepted |
 | [0010](0010-passkey-first-sign-in.md) | Passkey-first sign-in, with a setup code for the first passkey | Accepted |
+| [0011](0011-frontend-linting-and-typescript-version.md) | Oxlint for frontend linting; TypeScript 7 with TypeScript 6 alongside for tools | Accepted |

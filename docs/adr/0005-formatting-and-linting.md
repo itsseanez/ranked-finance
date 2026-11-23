@@ -1,6 +1,6 @@
 # 0005. Formatting and linting
 
-- **Status:** Accepted
+- **Status:** Accepted; frontend linting superseded by [0011](0011-frontend-linting-and-typescript-version.md)
 - **Date:** 2026-11-19
 
 ## Context
