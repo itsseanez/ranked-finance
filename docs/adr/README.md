@@ -15,5 +15,6 @@ To add one, copy [template.md](template.md) to the next number. Don't rewrite an
 | [0007](0007-swappable-data-providers.md) | Swappable bank-data providers, plus file import | Accepted |
 | [0008](0008-swappable-ai-providers.md) | Swappable AI providers; the app works without AI | Accepted |
 | [0009](0009-postgresql-19-pinned.md) | PostgreSQL 19, pinned to one major version everywhere | Accepted |
-| [0010](0010-passkey-first-sign-in.md) | Passkey-first sign-in, with a setup code for the first passkey | Accepted |
+| [0010](0010-passkey-first-sign-in.md) | Passkey-first sign-in, with a setup code for the first passkey | Missing-code behavior superseded by 0012 |
 | [0011](0011-frontend-linting-and-typescript-version.md) | Oxlint for frontend linting; TypeScript 7 with TypeScript 6 alongside for tools | Accepted |
+| [0012](0012-generated-setup-code-in-logs.md) | Generate the setup code when `SETUP_CODE` isn't set, and print it in the log | Accepted |

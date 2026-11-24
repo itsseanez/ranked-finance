@@ -30,7 +30,7 @@ class SetupController {
 
     record SetupRequest(String code) {}
 
-    private final SetupProperties setup;
+    private final SetupCode setupCode;
     private final OwnerProperties owner;
     private final Passkeys passkeys;
     private final UserRepository users;
@@ -41,12 +41,12 @@ class SetupController {
             SecurityContextHolder.getContextHolderStrategy();
 
     SetupController(
-            SetupProperties setup,
+            SetupCode setupCode,
             OwnerProperties owner,
             Passkeys passkeys,
             UserRepository users,
             OwnerUserDetailsService userDetails) {
-        this.setup = setup;
+        this.setupCode = setupCode;
         this.owner = owner;
         this.passkeys = passkeys;
         this.users = users;
@@ -61,13 +61,7 @@ class SetupController {
         if (passkeys.anyRegistered()) {
             return error(HttpStatus.FORBIDDEN, "setup_closed", "This app is already set up.");
         }
-        if (!setup.isConfigured()) {
-            return error(
-                    HttpStatus.FORBIDDEN,
-                    "setup_not_configured",
-                    "Setup isn't configured on this server. Set SETUP_CODE and restart.");
-        }
-        if (!setup.matches(body.code())) {
+        if (!setupCode.matches(body.code())) {
             return error(
                     HttpStatus.UNAUTHORIZED, "invalid_setup_code", "That setup code isn't right.");
         }
