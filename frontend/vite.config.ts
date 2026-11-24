@@ -16,7 +16,7 @@ export default defineConfig({
     proxy: {
       "/api": api,
       "/webauthn": api,
-      "/login": api,
+      "/login/webauthn": api, // not /login itself: that is the SPA's sign-in page
       "/logout": api,
     },
   },
