@@ -33,12 +33,13 @@ class SetupCode {
 
     /**
      * Constant-time comparison, so response timing doesn't reveal how much of the code was right.
+     * Surrounding whitespace is ignored: the log indents the code, so a copied code often has some.
      */
     boolean matches(String submitted) {
-        if (submitted == null || submitted.isEmpty()) {
+        if (submitted == null || submitted.isBlank()) {
             return false;
         }
-        return MessageDigest.isEqual(value.getBytes(UTF_8), submitted.getBytes(UTF_8));
+        return MessageDigest.isEqual(value.getBytes(UTF_8), submitted.strip().getBytes(UTF_8));
     }
 
     /**

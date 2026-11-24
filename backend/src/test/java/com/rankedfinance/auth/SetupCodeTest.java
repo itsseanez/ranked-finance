@@ -49,6 +49,19 @@ class SetupCodeTest {
         assertThat(generated().matches("not-the-setup-code")).isFalse();
     }
 
+    // The log indents the code, so a drag-selected copy often brings spaces or a newline with it.
+    @Test
+    void acceptsACodeWithSurroundingWhitespace() {
+        SetupCode code = generated();
+
+        assertThat(code.matches("    " + code.value() + "\n")).isTrue();
+    }
+
+    @Test
+    void whitespaceOnlyNeverMatches() {
+        assertThat(generated().matches("   ")).isFalse();
+    }
+
     @Test
     void emptyCodeNeverMatches() {
         for (SetupCode code : List.of(generated(), configured())) {

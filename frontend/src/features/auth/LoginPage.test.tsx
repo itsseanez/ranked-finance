@@ -8,6 +8,14 @@ import { LoginPage } from "@/features/auth/LoginPage";
 type Handler = () => Response;
 
 function stubFetch(handlers: Record<string, Handler>) {
+  const all: Record<string, Handler> = {
+    // Like the real server: signed out, so 401, and the response sets the CSRF cookie.
+    "/api/v1/me": () => {
+      document.cookie = "XSRF-TOKEN=test-token";
+      return new Response(null, { status: 401 });
+    },
+    ...handlers,
+  };
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
@@ -17,7 +25,7 @@ function stubFetch(handlers: Record<string, Handler>) {
           : input instanceof URL
             ? input.pathname
             : input.url;
-      const handler = handlers[path];
+      const handler = all[path];
       if (!handler) throw new Error(`Unexpected fetch: ${path}`);
       return handler();
     }),
@@ -63,6 +71,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  document.cookie = "XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
   Reflect.deleteProperty(navigator, "credentials");
 });
 

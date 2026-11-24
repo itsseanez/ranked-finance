@@ -43,6 +43,22 @@ function readCookie(name: string): string | undefined {
   return undefined;
 }
 
+/**
+ * The XSRF-TOKEN cookie, fetched first if this browser doesn't have one yet (for example a fresh
+ * browser that opens /login directly). Spring sets the cookie on every response, so any GET works;
+ * /api/v1/me answers 401 when signed out, which is fine here.
+ */
+async function csrfToken(): Promise<string | undefined> {
+  const existing = readCookie("XSRF-TOKEN");
+  if (existing) return existing;
+  await fetch("/api/v1/me", {
+    method: "GET",
+    headers: { Accept: "application/json" },
+    credentials: "same-origin",
+  });
+  return readCookie("XSRF-TOKEN");
+}
+
 async function readBody(response: Response): Promise<unknown> {
   if (response.status === 204) return null;
   const text = await response.text();
@@ -66,7 +82,7 @@ export async function apiFetch<T>(
     headers.set("Content-Type", "application/json");
   }
   if (!SAFE_METHODS.has(method)) {
-    const token = readCookie("XSRF-TOKEN");
+    const token = await csrfToken();
     if (token) headers.set("X-XSRF-TOKEN", token);
   }
 
