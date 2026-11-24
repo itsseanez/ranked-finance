@@ -1,6 +1,7 @@
 package com.rankedfinance.config;
 
 import com.rankedfinance.auth.LastPasskeyGuard;
+import com.rankedfinance.auth.Roles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -44,11 +45,11 @@ public class SecurityConfig {
                                                 HttpMethod.POST,
                                                 "/webauthn/register/options",
                                                 "/webauthn/register")
-                                        .hasAnyRole("SETUP", "OWNER")
+                                        .hasAnyRole(Roles.SETUP, Roles.OWNER)
                                         .requestMatchers("/logout")
                                         .authenticated()
                                         .anyRequest()
-                                        .hasRole("OWNER"))
+                                        .hasRole(Roles.OWNER))
                 .webAuthn(
                         passkeys ->
                                 passkeys.rpName("Ranked Finance")

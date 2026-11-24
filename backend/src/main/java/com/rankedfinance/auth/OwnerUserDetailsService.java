@@ -27,7 +27,7 @@ public class OwnerUserDetailsService implements UserDetailsService {
                         user ->
                                 User.withUsername(user.email())
                                         .password("")
-                                        .authorities("ROLE_OWNER")
+                                        .roles(Roles.OWNER)
                                         .build())
                 .orElseThrow(() -> new UsernameNotFoundException("no user with that email"));
     }

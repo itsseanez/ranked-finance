@@ -7,7 +7,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.rankedfinance.TestDatabase;
 import com.rankedfinance.TestcontainersConfiguration;
+import com.rankedfinance.auth.Roles;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +32,7 @@ class MeControllerTest {
 
     @AfterEach
     void deleteEverything() {
-        jdbcClient.sql("delete from users").update();
+        TestDatabase.deleteAllRows(jdbcClient);
     }
 
     // Setup creates the owner row. A setup session can't use the app (ADR 0013), and a real passkey
@@ -44,7 +46,7 @@ class MeControllerTest {
                                 .content("{\"code\":\"test-setup-code-0123456789\"}"))
                 .andExpect(status().isNoContent());
 
-        mvc.perform(get("/api/v1/me").with(user("owner@example.com").roles("OWNER")))
+        mvc.perform(get("/api/v1/me").with(user("owner@example.com").roles(Roles.OWNER)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.displayName").value("Owner"))

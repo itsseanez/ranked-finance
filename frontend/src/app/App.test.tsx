@@ -1,10 +1,41 @@
 import { render, screen } from "@testing-library/react";
-import { apiFetch } from "@/lib/api-client";
 import { createMemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppProviders } from "@/app/App";
 import { createQueryClient } from "@/app/query-client";
 import { routes } from "@/app/router";
+import { apiFetch } from "@/lib/api-client";
+
+type Responses = Record<string, () => Response>;
+
+const signedIn = () =>
+  Response.json({ id: "1", displayName: "Owner", email: "owner@example.com" });
+const status = (code: number) => () => new Response(null, { status: code });
+
+/** Renders the whole app at `path`, answering API calls from `responses` (path → response). */
+function renderApp(path: string, responses: Responses) {
+  // jsdom has no matchMedia; the shell uses it to pick the desktop layout.
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: true,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: string) => {
+      const respond = responses[input];
+      if (!respond) throw new Error(`Unexpected fetch: ${input}`);
+      return respond();
+    }),
+  );
+  const router = createMemoryRouter(routes, { initialEntries: [path] });
+  const queryClient = createQueryClient(
+    () => void router.navigate("/login", { replace: true }),
+  );
+  render(<AppProviders router={router} queryClient={queryClient} />);
+  return { router, queryClient };
+}
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -12,19 +43,7 @@ afterEach(() => {
 
 describe("auth gate", () => {
   it("redirectsToLoginOn401", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (path: string) => {
-        if (path === "/api/v1/me") return new Response(null, { status: 401 });
-        throw new Error(`Unexpected fetch: ${path}`);
-      }),
-    );
-    const router = createMemoryRouter(routes, { initialEntries: ["/"] });
-    const queryClient = createQueryClient(
-      () => void router.navigate("/login", { replace: true }),
-    );
-
-    render(<AppProviders router={router} queryClient={queryClient} />);
+    const { router } = renderApp("/", { "/api/v1/me": status(401) });
 
     expect(
       await screen.findByRole("button", { name: "Continue with passkey" }),
@@ -34,27 +53,14 @@ describe("auth gate", () => {
 
   // The session expires mid-use: any query that gets a 401 sends the user to /login, not just /me.
   it("redirectsToLoginWhenAnyQueryGets401", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (path: string) => {
-        if (path === "/api/v1/me") {
-          return Response.json({
-            id: "1",
-            displayName: "Owner",
-            email: "owner@example.com",
-          });
-        }
-        if (path === "/api/v1/other")
-          return new Response(null, { status: 401 });
-        throw new Error(`Unexpected fetch: ${path}`);
-      }),
-    );
-    stubDesktopLayout();
-    const router = createMemoryRouter(routes, { initialEntries: ["/"] });
-    const queryClient = createQueryClient(
-      () => void router.navigate("/login", { replace: true }),
-    );
-    render(<AppProviders router={router} queryClient={queryClient} />);
+    let sessionExpired = false;
+    const { router, queryClient } = renderApp("/", {
+      "/api/v1/me": () => (sessionExpired ? status(401)() : signedIn()),
+      "/api/v1/other": () => {
+        sessionExpired = true;
+        return status(401)();
+      },
+    });
     await screen.findByRole("heading", { name: "Home" });
 
     await queryClient
@@ -71,26 +77,7 @@ describe("auth gate", () => {
   });
 
   it("redirectsHomeWhenAlreadySignedIn", async () => {
-    stubDesktopLayout();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (path: string) => {
-        if (path === "/api/v1/me") {
-          return Response.json({
-            id: "1",
-            displayName: "Owner",
-            email: "owner@example.com",
-          });
-        }
-        throw new Error(`Unexpected fetch: ${path}`);
-      }),
-    );
-    const router = createMemoryRouter(routes, { initialEntries: ["/login"] });
-    const queryClient = createQueryClient(
-      () => void router.navigate("/login", { replace: true }),
-    );
-
-    render(<AppProviders router={router} queryClient={queryClient} />);
+    const { router } = renderApp("/login", { "/api/v1/me": signedIn });
 
     expect(
       await screen.findByRole("heading", { name: "Home" }),
@@ -100,32 +87,10 @@ describe("auth gate", () => {
 
   // A setup-only session (passkey setup didn't finish) can't use the app: the API answers 403.
   it("redirectsToLoginForASetupOnlySession", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (path: string) => {
-        if (path === "/api/v1/me") return new Response(null, { status: 403 });
-        throw new Error(`Unexpected fetch: ${path}`);
-      }),
-    );
-    const router = createMemoryRouter(routes, { initialEntries: ["/"] });
-    const queryClient = createQueryClient(
-      () => void router.navigate("/login", { replace: true }),
-    );
-
-    render(<AppProviders router={router} queryClient={queryClient} />);
+    renderApp("/", { "/api/v1/me": status(403) });
 
     expect(
       await screen.findByRole("button", { name: "Continue with passkey" }),
     ).toBeInTheDocument();
   });
 });
-
-// jsdom has no matchMedia; the shell uses it to pick the desktop layout.
-function stubDesktopLayout() {
-  vi.stubGlobal("matchMedia", (query: string) => ({
-    matches: true,
-    media: query,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-  }));
-}

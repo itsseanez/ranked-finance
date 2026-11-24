@@ -1,5 +1,6 @@
 package com.rankedfinance.auth;
 
+import com.rankedfinance.common.ApiProblems;
 import com.rankedfinance.user.User;
 import com.rankedfinance.user.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -63,10 +64,11 @@ class SetupController {
             HttpServletRequest request,
             HttpServletResponse response) {
         if (passkeys.anyRegistered()) {
-            return error(HttpStatus.FORBIDDEN, "setup_closed", "This app is already set up.");
+            return ApiProblems.response(
+                    HttpStatus.FORBIDDEN, "setup_closed", "This app is already set up.");
         }
         if (!setupCode.matches(body.code())) {
-            return error(
+            return ApiProblems.response(
                     HttpStatus.UNAUTHORIZED, "invalid_setup_code", "That setup code isn't right.");
         }
 
@@ -75,7 +77,7 @@ class SetupController {
                         ? Optional.of(users.createOwner(owner.email(), owner.displayName()))
                         : users.findByEmail(owner.email());
         if (ownerRow.isEmpty()) {
-            return error(
+            return ApiProblems.response(
                     HttpStatus.CONFLICT,
                     "owner_mismatch",
                     "OWNER_EMAIL doesn't match the owner already on this server.");
@@ -93,7 +95,9 @@ class SetupController {
             String email, HttpServletRequest request, HttpServletResponse response) {
         Authentication authentication =
                 UsernamePasswordAuthenticationToken.authenticated(
-                        email, null, List.of(new SimpleGrantedAuthority("ROLE_SETUP")));
+                        email,
+                        null,
+                        List.of(new SimpleGrantedAuthority(Roles.authority(Roles.SETUP))));
         // A new session ID and CSRF token, so ones planted before setup are useless afterwards.
         if (request.getSession(false) != null) {
             request.changeSessionId();
@@ -103,12 +107,5 @@ class SetupController {
         context.setAuthentication(authentication);
         securityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, request, response);
-    }
-
-    private static ResponseEntity<ProblemDetail> error(
-            HttpStatus status, String code, String detail) {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
-        problem.setProperty("error", code);
-        return ResponseEntity.status(status).body(problem);
     }
 }
