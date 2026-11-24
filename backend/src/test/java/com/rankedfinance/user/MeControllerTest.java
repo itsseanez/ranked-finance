@@ -1,6 +1,7 @@
 package com.rankedfinance.user;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -15,7 +16,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.MockMvc;
 
 // Checks /api/v1/me end to end, signing in through first-run setup since there's no login screen
@@ -33,22 +33,18 @@ class MeControllerTest {
         jdbcClient.sql("delete from users").update();
     }
 
+    // Setup creates the owner row. A setup session can't use the app (ADR 0013), and a real passkey
+    // sign-in can't run in MockMvc, so the request is made as the signed-in owner.
     @Test
     void returnsTheSignedInOwner() throws Exception {
-        MockHttpSession session =
-                (MockHttpSession)
-                        mvc.perform(
-                                        post("/api/v1/setup")
-                                                .with(csrf())
-                                                .contentType(MediaType.APPLICATION_JSON)
-                                                .content(
-                                                        "{\"code\":\"test-setup-code-0123456789\"}"))
-                                .andExpect(status().isNoContent())
-                                .andReturn()
-                                .getRequest()
-                                .getSession(false);
+        mvc.perform(
+                        post("/api/v1/setup")
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"code\":\"test-setup-code-0123456789\"}"))
+                .andExpect(status().isNoContent());
 
-        mvc.perform(get("/api/v1/me").session(session))
+        mvc.perform(get("/api/v1/me").with(user("owner@example.com").roles("OWNER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.displayName").value("Owner"))

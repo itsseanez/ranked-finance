@@ -35,7 +35,7 @@ class SecurityTest {
     @Test
     void anonymousCannotRequestRegistrationOptions() throws Exception {
         mvc.perform(post("/webauthn/register/options").with(csrf()))
-                .andExpect(status().is4xxClientError());
+                .andExpect(status().isBadRequest());
 
         long userEntities =
                 jdbcClient.sql("select count(*) from user_entities").query(Long.class).single();

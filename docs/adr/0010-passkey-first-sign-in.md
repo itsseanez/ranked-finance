@@ -1,6 +1,6 @@
 # 0010. Passkey-first sign-in, with a setup code for the first passkey
 
-- **Status:** Accepted; the "setup is unavailable without `SETUP_CODE`" part is superseded by [0012](0012-generated-setup-code-in-logs.md)
+- **Status:** Accepted; the "setup is unavailable without `SETUP_CODE`" part is superseded by [0012](0012-generated-setup-code-in-logs.md); what the setup code grants is superseded by [0013](0013-setup-code-unlocks-registration-only.md)
 - **Date:** 2026-11-22
 
 ## Context

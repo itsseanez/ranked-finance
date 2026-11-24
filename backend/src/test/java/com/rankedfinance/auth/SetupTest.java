@@ -2,6 +2,7 @@ package com.rankedfinance.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.rankedfinance.TestcontainersConfiguration;
+import com.rankedfinance.user.UserRepository;
 import java.time.Instant;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
@@ -28,6 +30,7 @@ import org.springframework.security.web.webauthn.management.UserCredentialReposi
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 // First-run setup (ADR 0010): the setup code from SETUP_CODE creates the owner and signs them in,
 // so they can register the first passkey. Once a passkey exists, setup is closed for good.
@@ -41,6 +44,7 @@ class SetupTest {
     @Autowired MockMvc mvc;
     @Autowired JdbcClient jdbcClient;
     @Autowired UserCredentialRepository credentials;
+    @Autowired UserRepository users;
 
     // MockMvc requests commit, so each test cleans up after itself.
     @AfterEach
@@ -81,7 +85,7 @@ class SetupTest {
     // with the setup code could claim the instance again.
     @Test
     void cannotDeleteTheLastPasskey() throws Exception {
-        MockHttpSession session = signInThroughSetup();
+        signInThroughSetup();
         ImmutableCredentialRecord passkey = aPasskey();
         credentials.save(passkey);
 
@@ -89,7 +93,7 @@ class SetupTest {
                         delete(
                                         "/webauthn/register/"
                                                 + passkey.getCredentialId().toBase64UrlString())
-                                .session(session)
+                                .with(owner())
                                 .with(csrf()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("last_passkey"));
@@ -101,8 +105,51 @@ class SetupTest {
     // Spring's built-in passkey-management page would offer a delete button that bypasses the app.
     @Test
     void defaultPasskeyPageIsOff() throws Exception {
-        mvc.perform(get("/webauthn/register").session(signInThroughSetup()))
-                .andExpect(status().isNotFound());
+        signInThroughSetup();
+
+        mvc.perform(get("/webauthn/register").with(owner())).andExpect(status().isNotFound());
+    }
+
+    // The setup code unlocks passkey registration only (ADR 0013). Using the app takes a real
+    // passkey sign-in, so a browser whose passkey setup failed isn't left signed in without one.
+    @Test
+    void setupSessionCannotUseTheApp() throws Exception {
+        mvc.perform(get("/api/v1/me").session(signInThroughSetup()))
+                .andExpect(status().isForbidden());
+    }
+
+    // A CSRF token planted before setup must not keep working after it.
+    @Test
+    void setupClearsTheCsrfToken() throws Exception {
+        MvcResult result = setup(SETUP_CODE).andExpect(status().isNoContent()).andReturn();
+
+        assertThat(result.getResponse().getHeaders("Set-Cookie"))
+                .filteredOn(cookie -> cookie.startsWith("XSRF-TOKEN="))
+                .last()
+                .asString()
+                .contains("Max-Age=0");
+    }
+
+    // Retrying setup (for example after a cancelled passkey prompt) reuses the owner row.
+    @Test
+    void setupCanBeRepeatedBeforeAPasskeyExists() throws Exception {
+        setup(SETUP_CODE).andExpect(status().isNoContent());
+        setup(SETUP_CODE).andExpect(status().isNoContent());
+
+        assertThat(userCount()).isEqualTo(1);
+    }
+
+    @Test
+    void ownerEmailMismatchIsReported() throws Exception {
+        users.createOwner("someone-else@example.com", "Someone");
+
+        setup(SETUP_CODE)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("owner_mismatch"));
+    }
+
+    private static RequestPostProcessor owner() {
+        return user("owner@example.com").roles("OWNER");
     }
 
     private MockHttpSession signInThroughSetup() throws Exception {

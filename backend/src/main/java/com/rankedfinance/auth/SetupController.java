@@ -4,25 +4,29 @@ import com.rankedfinance.user.User;
 import com.rankedfinance.user.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * First-run setup (ADR 0010). Until a passkey exists, the right setup code creates the owner and
- * signs them in, so they can register their first passkey through Spring Security's endpoints.
+ * First-run setup (ADR 0010, 0013). Until a passkey exists, the right setup code creates the owner
+ * and opens a setup-only session, so they can register their first passkey through Spring
+ * Security's endpoints and then sign in with it.
  */
 @RestController
 @RequestMapping("/api/v1/setup")
@@ -40,23 +44,17 @@ class SetupController {
     private final OwnerProperties owner;
     private final Passkeys passkeys;
     private final UserRepository users;
-    private final OwnerUserDetailsService userDetails;
     private final SecurityContextRepository securityContextRepository =
             new HttpSessionSecurityContextRepository();
     private final SecurityContextHolderStrategy securityContextHolder =
             SecurityContextHolder.getContextHolderStrategy();
 
     SetupController(
-            SetupCode setupCode,
-            OwnerProperties owner,
-            Passkeys passkeys,
-            UserRepository users,
-            OwnerUserDetailsService userDetails) {
+            SetupCode setupCode, OwnerProperties owner, Passkeys passkeys, UserRepository users) {
         this.setupCode = setupCode;
         this.owner = owner;
         this.passkeys = passkeys;
         this.users = users;
-        this.userDetails = userDetails;
     }
 
     @PostMapping
@@ -72,29 +70,35 @@ class SetupController {
                     HttpStatus.UNAUTHORIZED, "invalid_setup_code", "That setup code isn't right.");
         }
 
-        User ownerRow =
+        Optional<User> ownerRow =
                 users.count() == 0
-                        ? users.createOwner(owner.email(), owner.displayName())
-                        : users.findByEmail(owner.email())
-                                .orElseThrow(
-                                        () ->
-                                                new IllegalStateException(
-                                                        "the existing owner's email doesn't match"
-                                                                + " OWNER_EMAIL"));
-        signIn(ownerRow.email(), request, response);
+                        ? Optional.of(users.createOwner(owner.email(), owner.displayName()))
+                        : users.findByEmail(owner.email());
+        if (ownerRow.isEmpty()) {
+            return error(
+                    HttpStatus.CONFLICT,
+                    "owner_mismatch",
+                    "OWNER_EMAIL doesn't match the owner already on this server.");
+        }
+        startSetupSession(ownerRow.get().email(), request, response);
         return ResponseEntity.noContent().build();
     }
 
-    private void signIn(String email, HttpServletRequest request, HttpServletResponse response) {
-        UserDetails principal = userDetails.loadUserByUsername(email);
+    /**
+     * A session that can only register a passkey (ADR 0013). Using the app takes a real passkey
+     * sign-in afterwards, so a browser whose passkey setup failed isn't left signed in without one.
+     * The principal's name is the owner's email, which names the passkey's WebAuthn user entity.
+     */
+    private void startSetupSession(
+            String email, HttpServletRequest request, HttpServletResponse response) {
         Authentication authentication =
                 UsernamePasswordAuthenticationToken.authenticated(
-                        principal, null, principal.getAuthorities());
-        // A new session ID on sign-in, so a session ID planted before sign-in is useless
-        // afterwards.
+                        email, null, List.of(new SimpleGrantedAuthority("ROLE_SETUP")));
+        // A new session ID and CSRF token, so ones planted before setup are useless afterwards.
         if (request.getSession(false) != null) {
             request.changeSessionId();
         }
+        CookieCsrfTokenRepository.withHttpOnlyFalse().saveToken(null, request, response);
         SecurityContext context = securityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         securityContextHolder.setContext(context);
