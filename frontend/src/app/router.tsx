@@ -1,5 +1,7 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, type RouteObject } from "react-router";
 import { AppShell } from "@/app/shell/AppShell";
+import { LoginPage } from "@/features/auth/LoginPage";
+import { RequireAuth } from "@/features/auth/RequireAuth";
 import { HomePage } from "@/features/home/HomePage";
 import { MoneyPage } from "@/features/money/MoneyPage";
 import { NotificationsPage } from "@/features/notifications/NotificationsPage";
@@ -7,9 +9,14 @@ import { PlanPage } from "@/features/plan/PlanPage";
 import { RanksPage } from "@/features/ranks/RanksPage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 
-export const router = createBrowserRouter([
+export const routes: RouteObject[] = [
+  { path: "login", element: <LoginPage /> },
   {
-    element: <AppShell />,
+    element: (
+      <RequireAuth>
+        <AppShell />
+      </RequireAuth>
+    ),
     children: [
       { index: true, element: <HomePage /> },
       { path: "plan", element: <PlanPage /> },
@@ -19,4 +26,6 @@ export const router = createBrowserRouter([
       { path: "notifications", element: <NotificationsPage /> },
     ],
   },
-]);
+];
+
+export const router = createBrowserRouter(routes);
