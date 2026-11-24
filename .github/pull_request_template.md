@@ -1,6 +1,18 @@
-## What and why
+## Why
 
-<!-- One or two sentences. Link the issue or roadmap milestone. -->
+<!-- The problem this solves and why this approach. Link the issue or roadmap milestone. -->
+
+## What changed
+
+<!-- The main changes at a high level, plus decisions the code doesn't show. -->
+
+## How it was tested
+
+<!-- Tests that failed first and now pass, the commands you ran, and any manual checks. -->
+
+## Where to look
+
+<!-- Anything tricky or risky that a reviewer should read closely. Delete if there's nothing. -->
 
 ## Checklist
 
