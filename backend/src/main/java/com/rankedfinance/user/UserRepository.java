@@ -36,6 +36,27 @@ public class UserRepository {
                 .single();
     }
 
+    /**
+     * Creates the owner unless one already exists, then returns the owner with this email. The
+     * insert is one statement, so two setups at once can't race. Empty when the install's owner has
+     * a different email (OWNER_EMAIL changed after setup started).
+     */
+    @Transactional
+    public Optional<User> findOrCreateOwner(String email, String displayName) {
+        jdbcClient
+                .sql(
+                        """
+                        insert into users (id, email, display_name)
+                        values (:id, :email, :displayName)
+                        on conflict do nothing
+                        """)
+                .param("id", UUID.randomUUID())
+                .param("email", email)
+                .param("displayName", displayName)
+                .update();
+        return findByEmail(email);
+    }
+
     /** Finds a user by sign-in email. Passkey login uses it to load the signed-in user. */
     public Optional<User> findByEmail(String email) {
         return jdbcClient

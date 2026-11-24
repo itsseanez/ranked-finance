@@ -14,6 +14,7 @@ class Passkeys {
     }
 
     /** Whether any passkey exists on this install. Once one does, first-run setup is closed. */
+    /** Every passkey on the install. Deliberately not scoped to a user: v1 has one owner. */
     long count() {
         return jdbcClient.sql("select count(*) from user_credentials").query(Long.class).single();
     }

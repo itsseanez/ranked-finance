@@ -1,5 +1,6 @@
 package com.rankedfinance.config;
 
+import com.rankedfinance.auth.FirstRunSetup;
 import com.rankedfinance.auth.LastPasskeyGuard;
 import com.rankedfinance.auth.Roles;
 import org.springframework.context.annotation.Bean;
@@ -12,6 +13,12 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
+import org.springframework.security.web.context.DelegatingSecurityContextRepository;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.webauthn.management.JdbcPublicKeyCredentialUserEntityRepository;
 import org.springframework.security.web.webauthn.management.JdbcUserCredentialRepository;
 
@@ -24,7 +31,12 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(
-            HttpSecurity http, WebAuthnProperties webAuthn, LastPasskeyGuard lastPasskeyGuard)
+            HttpSecurity http,
+            WebAuthnProperties webAuthn,
+            FirstRunSetup firstRunSetup,
+            LastPasskeyGuard lastPasskeyGuard,
+            CsrfTokenRepository csrfTokens,
+            SecurityContextRepository securityContexts)
             throws Exception {
         http.authorizeHttpRequests(
                         authorize ->
@@ -40,12 +52,12 @@ public class SecurityConfig {
                                         // Only exists in dev; see springdoc.api-docs.enabled.
                                         .requestMatchers("/v3/api-docs/**")
                                         .permitAll()
-                                        // A setup session (ADR 0013) may only register a passkey.
+                                        // The owner, or a setup session while setup is open.
                                         .requestMatchers(
                                                 HttpMethod.POST,
                                                 "/webauthn/register/options",
                                                 "/webauthn/register")
-                                        .hasAnyRole(Roles.SETUP, Roles.OWNER)
+                                        .access(firstRunSetup.passkeyRegistrationAccess())
                                         .requestMatchers("/logout")
                                         .authenticated()
                                         .anyRequest()
@@ -61,7 +73,8 @@ public class SecurityConfig {
                 // before it.
                 .addFilterAfter(lastPasskeyGuard.filter(), AuthorizationFilter.class)
                 // The SPA reads the XSRF-TOKEN cookie and sends it back in the X-XSRF-TOKEN header.
-                .csrf(csrf -> csrf.spa())
+                .csrf(csrf -> csrf.spa().csrfTokenRepository(csrfTokens))
+                .securityContext(context -> context.securityContextRepository(securityContexts))
                 .exceptionHandling(
                         exceptions ->
                                 exceptions.authenticationEntryPoint(
@@ -72,6 +85,23 @@ public class SecurityConfig {
                                         new HttpStatusReturningLogoutSuccessHandler(
                                                 HttpStatus.NO_CONTENT)));
         return http.build();
+    }
+
+    /**
+     * The CSRF repository csrf.spa() would create, as a bean so SetupSession clears the same cookie
+     * the chain checks.
+     */
+    @Bean
+    CsrfTokenRepository csrfTokenRepository() {
+        return CookieCsrfTokenRepository.withHttpOnlyFalse();
+    }
+
+    /** Spring Security's default security-context repository, shared with SetupSession. */
+    @Bean
+    SecurityContextRepository securityContextRepository() {
+        return new DelegatingSecurityContextRepository(
+                new RequestAttributeSecurityContextRepository(),
+                new HttpSessionSecurityContextRepository());
     }
 
     @Bean

@@ -1,24 +1,11 @@
 package com.rankedfinance.auth;
 
 import com.rankedfinance.common.ApiProblems;
-import com.rankedfinance.user.User;
-import com.rankedfinance.user.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.List;
-import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.context.SecurityContextHolderStrategy;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.context.SecurityContextRepository;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -41,21 +28,12 @@ class SetupController {
         }
     }
 
-    private final SetupCode setupCode;
-    private final OwnerProperties owner;
-    private final Passkeys passkeys;
-    private final UserRepository users;
-    private final SecurityContextRepository securityContextRepository =
-            new HttpSessionSecurityContextRepository();
-    private final SecurityContextHolderStrategy securityContextHolder =
-            SecurityContextHolder.getContextHolderStrategy();
+    private final FirstRunSetup firstRunSetup;
+    private final SetupSession setupSession;
 
-    SetupController(
-            SetupCode setupCode, OwnerProperties owner, Passkeys passkeys, UserRepository users) {
-        this.setupCode = setupCode;
-        this.owner = owner;
-        this.passkeys = passkeys;
-        this.users = users;
+    SetupController(FirstRunSetup firstRunSetup, SetupSession setupSession) {
+        this.firstRunSetup = firstRunSetup;
+        this.setupSession = setupSession;
     }
 
     @PostMapping
@@ -63,49 +41,24 @@ class SetupController {
             @RequestBody SetupRequest body,
             HttpServletRequest request,
             HttpServletResponse response) {
-        if (passkeys.anyRegistered()) {
-            return ApiProblems.response(
-                    HttpStatus.FORBIDDEN, "setup_closed", "This app is already set up.");
-        }
-        if (!setupCode.matches(body.code())) {
-            return ApiProblems.response(
-                    HttpStatus.UNAUTHORIZED, "invalid_setup_code", "That setup code isn't right.");
-        }
-
-        Optional<User> ownerRow =
-                users.count() == 0
-                        ? Optional.of(users.createOwner(owner.email(), owner.displayName()))
-                        : users.findByEmail(owner.email());
-        if (ownerRow.isEmpty()) {
-            return ApiProblems.response(
-                    HttpStatus.CONFLICT,
-                    "owner_mismatch",
-                    "OWNER_EMAIL doesn't match the owner already on this server.");
-        }
-        startSetupSession(ownerRow.get().email(), request, response);
-        return ResponseEntity.noContent().build();
-    }
-
-    /**
-     * A session that can only register a passkey (ADR 0013). Using the app takes a real passkey
-     * sign-in afterwards, so a browser whose passkey setup failed isn't left signed in without one.
-     * The principal's name is the owner's email, which names the passkey's WebAuthn user entity.
-     */
-    private void startSetupSession(
-            String email, HttpServletRequest request, HttpServletResponse response) {
-        Authentication authentication =
-                UsernamePasswordAuthenticationToken.authenticated(
-                        email,
-                        null,
-                        List.of(new SimpleGrantedAuthority(Roles.authority(Roles.SETUP))));
-        // A new session ID and CSRF token, so ones planted before setup are useless afterwards.
-        if (request.getSession(false) != null) {
-            request.changeSessionId();
-        }
-        CookieCsrfTokenRepository.withHttpOnlyFalse().saveToken(null, request, response);
-        SecurityContext context = securityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        securityContextHolder.setContext(context);
-        securityContextRepository.saveContext(context, request, response);
+        return switch (firstRunSetup.start(body.code())) {
+            case FirstRunSetup.Closed closed ->
+                    ApiProblems.response(
+                            HttpStatus.FORBIDDEN, "setup_closed", "This app is already set up.");
+            case FirstRunSetup.WrongCode wrongCode ->
+                    ApiProblems.response(
+                            HttpStatus.UNAUTHORIZED,
+                            "invalid_setup_code",
+                            "That setup code isn't right.");
+            case FirstRunSetup.OwnerMismatch mismatch ->
+                    ApiProblems.response(
+                            HttpStatus.CONFLICT,
+                            "owner_mismatch",
+                            "OWNER_EMAIL doesn't match the owner already on this server.");
+            case FirstRunSetup.Opened opened -> {
+                setupSession.start(opened.email(), request, response);
+                yield ResponseEntity.noContent().build();
+            }
+        };
     }
 }

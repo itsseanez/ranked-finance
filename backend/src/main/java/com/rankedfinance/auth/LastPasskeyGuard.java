@@ -26,11 +26,11 @@ public class LastPasskeyGuard {
             PathPatternRequestMatcher.withDefaults()
                     .matcher(HttpMethod.DELETE, "/webauthn/register/{id}");
 
-    private final Passkeys passkeys;
+    private final FirstRunSetup firstRunSetup;
     private final JsonMapper json;
 
-    LastPasskeyGuard(Passkeys passkeys, JsonMapper json) {
-        this.passkeys = passkeys;
+    LastPasskeyGuard(FirstRunSetup firstRunSetup, JsonMapper json) {
+        this.firstRunSetup = firstRunSetup;
         this.json = json;
     }
 
@@ -46,7 +46,7 @@ public class LastPasskeyGuard {
             protected void doFilterInternal(
                     HttpServletRequest request, HttpServletResponse response, FilterChain chain)
                     throws ServletException, IOException {
-                if (DELETE_PASSKEY.matches(request) && passkeys.count() <= 1) {
+                if (DELETE_PASSKEY.matches(request) && !firstRunSetup.mayRemovePasskey()) {
                     ApiProblems.write(
                             response,
                             HttpStatus.CONFLICT,

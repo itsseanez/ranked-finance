@@ -12,8 +12,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.rankedfinance.TestDatabase;
 import com.rankedfinance.TestcontainersConfiguration;
 import com.rankedfinance.user.UserRepository;
-import java.time.Instant;
-import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +21,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.mock.web.MockHttpSession;
-import org.springframework.security.web.webauthn.api.Bytes;
 import org.springframework.security.web.webauthn.api.ImmutableCredentialRecord;
-import org.springframework.security.web.webauthn.api.ImmutablePublicKeyCose;
-import org.springframework.security.web.webauthn.api.PublicKeyCredentialType;
 import org.springframework.security.web.webauthn.management.UserCredentialRepository;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -73,7 +68,7 @@ class SetupTest {
 
     @Test
     void setupIsClosedOnceAPasskeyExists() throws Exception {
-        credentials.save(aPasskey());
+        credentials.save(TestPasskeys.aPasskey());
 
         setup(SETUP_CODE)
                 .andExpect(status().isForbidden())
@@ -85,7 +80,7 @@ class SetupTest {
     @Test
     void cannotDeleteTheLastPasskey() throws Exception {
         signInThroughSetup();
-        ImmutableCredentialRecord passkey = aPasskey();
+        ImmutableCredentialRecord passkey = TestPasskeys.aPasskey();
         credentials.save(passkey);
 
         mvc.perform(
@@ -99,6 +94,22 @@ class SetupTest {
 
         assertThat(credentials.findByCredentialId(passkey.getCredentialId())).isNotNull();
         setup(SETUP_CODE).andExpect(jsonPath("$.error").value("setup_closed"));
+    }
+
+    // Setup closes once a passkey exists, including for a setup session left over from before
+    // (for example when the sign-in right after registration failed).
+    @Test
+    void leftoverSetupSessionCannotRegisterAnotherPasskey() throws Exception {
+        MockHttpSession session = signInThroughSetup();
+        credentials.save(TestPasskeys.aPasskey());
+
+        mvc.perform(
+                        post("/webauthn/register")
+                                .session(session)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{}"))
+                .andExpect(status().isForbidden());
     }
 
     // Spring's built-in passkey-management page would offer a delete button that bypasses the app.
@@ -166,24 +177,5 @@ class SetupTest {
 
     private long userCount() {
         return jdbcClient.sql("select count(*) from users").query(Long.class).single();
-    }
-
-    private static ImmutableCredentialRecord aPasskey() {
-        return ImmutableCredentialRecord.builder()
-                .credentialType(PublicKeyCredentialType.PUBLIC_KEY)
-                .credentialId(Bytes.random())
-                .userEntityUserId(Bytes.random())
-                .publicKey(new ImmutablePublicKeyCose(new byte[] {1, 2, 3}))
-                .signatureCount(0)
-                .uvInitialized(true)
-                .transports(Set.of())
-                .backupEligible(false)
-                .backupState(false)
-                .attestationObject(new Bytes(new byte[] {1}))
-                .attestationClientDataJSON(new Bytes(new byte[] {1}))
-                .created(Instant.now())
-                .lastUsed(Instant.now())
-                .label("test passkey")
-                .build();
     }
 }

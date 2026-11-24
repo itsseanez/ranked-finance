@@ -2,7 +2,6 @@ package com.rankedfinance.auth;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.rankedfinance.TestDatabase;
@@ -19,7 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
 // With no SETUP_CODE, the server generates a setup code at startup (ADR 0012). That code opens
-// setup; an empty code never does.
+// setup. (An empty code never matching is pinned in SetupCodeTest.)
 @SpringBootTest(properties = "app.setup.code=")
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
@@ -38,13 +37,6 @@ class SetupWithGeneratedCodeTest {
     @Test
     void generatedCodeSignsInTheOwner() throws Exception {
         setup(setupCode.value()).andExpect(status().isNoContent());
-    }
-
-    @Test
-    void emptyCodeNeverMatches() throws Exception {
-        setup("")
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("invalid_setup_code"));
     }
 
     private ResultActions setup(String code) throws Exception {
