@@ -39,8 +39,16 @@ public class SecurityConfig {
                                         // Only exists in dev; see springdoc.api-docs.enabled.
                                         .requestMatchers("/v3/api-docs/**")
                                         .permitAll()
+                                        // A setup session (ADR 0013) may only register a passkey.
+                                        .requestMatchers(
+                                                HttpMethod.POST,
+                                                "/webauthn/register/options",
+                                                "/webauthn/register")
+                                        .hasAnyRole("SETUP", "OWNER")
+                                        .requestMatchers("/logout")
+                                        .authenticated()
                                         .anyRequest()
-                                        .authenticated())
+                                        .hasRole("OWNER"))
                 .webAuthn(
                         passkeys ->
                                 passkeys.rpName("Ranked Finance")

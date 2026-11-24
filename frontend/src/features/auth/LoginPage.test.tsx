@@ -48,7 +48,11 @@ function renderLoginPage() {
     { initialEntries: ["/login"] },
   );
   render(
-    <QueryClientProvider client={new QueryClient()}>
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
@@ -115,5 +119,62 @@ describe("LoginPage", () => {
         "This app is already set up. Sign in with your passkey.",
       ),
     ).toBeInTheDocument();
+  });
+
+  // Older browsers have WebAuthn but not the JSON helpers this app relies on.
+  it("showsUnsupportedMessageWithoutJsonHelpers", async () => {
+    vi.stubGlobal("PublicKeyCredential", {});
+    stubFetch({});
+    renderLoginPage();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Continue with passkey" }),
+    );
+
+    expect(
+      await screen.findByText(
+        "This browser doesn't support passkeys. Try the latest Chrome, Safari, or Edge.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  // The setup code only unlocks passkey registration (ADR 0013); the user then signs in with it.
+  it("signsInWithTheNewPasskeyAfterSetup", async () => {
+    const credential = { toJSON: () => ({ id: "new-passkey" }) };
+    stubFetch({
+      "/api/v1/setup": () => new Response(null, { status: 204 }),
+      "/webauthn/register/options": () => Response.json({ challenge: "abc" }),
+      "/webauthn/register": () => Response.json({ success: true }),
+      "/webauthn/authenticate/options": () =>
+        Response.json({ challenge: "def" }),
+      "/login/webauthn": () =>
+        Response.json({ authenticated: true, redirectUrl: "/" }),
+    });
+    stubCredentials({
+      create: vi.fn().mockResolvedValue(credential),
+      get: vi.fn().mockResolvedValue(credential),
+    });
+    renderLoginPage();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "First-time setup" }),
+    );
+    await userEvent.type(
+      screen.getByLabelText("Setup code"),
+      "some-setup-code-1234567",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create passkey" }),
+    );
+
+    expect(await screen.findByText("Home")).toBeInTheDocument();
+    const paths = vi.mocked(fetch).mock.calls.map(([input]) => String(input));
+    expect(paths.filter((path) => path !== "/api/v1/me")).toEqual([
+      "/api/v1/setup",
+      "/webauthn/register/options",
+      "/webauthn/register",
+      "/webauthn/authenticate/options",
+      "/login/webauthn",
+    ]);
   });
 });

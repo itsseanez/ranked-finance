@@ -49,13 +49,7 @@ describe("auth gate", () => {
         throw new Error(`Unexpected fetch: ${path}`);
       }),
     );
-    // jsdom has no matchMedia; the shell uses it to pick the desktop layout.
-    vi.stubGlobal("matchMedia", (query: string) => ({
-      matches: true,
-      media: query,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-    }));
+    stubDesktopLayout();
     const router = createMemoryRouter(routes, { initialEntries: ["/"] });
     const queryClient = createQueryClient(
       () => void router.navigate("/login", { replace: true }),
@@ -75,4 +69,63 @@ describe("auth gate", () => {
     ).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/login");
   });
+
+  it("redirectsHomeWhenAlreadySignedIn", async () => {
+    stubDesktopLayout();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (path: string) => {
+        if (path === "/api/v1/me") {
+          return Response.json({
+            id: "1",
+            displayName: "Owner",
+            email: "owner@example.com",
+          });
+        }
+        throw new Error(`Unexpected fetch: ${path}`);
+      }),
+    );
+    const router = createMemoryRouter(routes, { initialEntries: ["/login"] });
+    const queryClient = createQueryClient(
+      () => void router.navigate("/login", { replace: true }),
+    );
+
+    render(<AppProviders router={router} queryClient={queryClient} />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Home" }),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/");
+  });
+
+  // A setup-only session (passkey setup didn't finish) can't use the app: the API answers 403.
+  it("redirectsToLoginForASetupOnlySession", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (path: string) => {
+        if (path === "/api/v1/me") return new Response(null, { status: 403 });
+        throw new Error(`Unexpected fetch: ${path}`);
+      }),
+    );
+    const router = createMemoryRouter(routes, { initialEntries: ["/"] });
+    const queryClient = createQueryClient(
+      () => void router.navigate("/login", { replace: true }),
+    );
+
+    render(<AppProviders router={router} queryClient={queryClient} />);
+
+    expect(
+      await screen.findByRole("button", { name: "Continue with passkey" }),
+    ).toBeInTheDocument();
+  });
 });
+
+// jsdom has no matchMedia; the shell uses it to pick the desktop layout.
+function stubDesktopLayout() {
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: true,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+}

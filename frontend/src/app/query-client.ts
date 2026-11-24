@@ -1,4 +1,5 @@
 import { QueryCache, QueryClient } from "@tanstack/react-query";
+import { meQueryKey } from "@/features/auth/use-me";
 import { ApiError, UnauthorizedError } from "@/lib/api-client";
 
 /**
@@ -6,10 +7,14 @@ import { ApiError, UnauthorizedError } from "@/lib/api-client";
  * which sends the user to /login. API errors aren't retried: they won't change on a retry.
  */
 export function createQueryClient(onUnauthorized: () => void): QueryClient {
-  return new QueryClient({
+  const client: QueryClient = new QueryClient({
     queryCache: new QueryCache({
       onError: (error) => {
-        if (error instanceof UnauthorizedError) onUnauthorized();
+        if (error instanceof UnauthorizedError) {
+          // The session is gone: forget who was signed in, or /login would bounce back home.
+          client.removeQueries({ queryKey: meQueryKey });
+          onUnauthorized();
+        }
       },
     }),
     defaultOptions: {
@@ -19,4 +24,5 @@ export function createQueryClient(onUnauthorized: () => void): QueryClient {
       },
     },
   });
+  return client;
 }

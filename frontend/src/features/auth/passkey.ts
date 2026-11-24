@@ -16,9 +16,16 @@ export class PasskeyUnsupportedError extends Error {
   }
 }
 
+/** WebAuthn plus the JSON helpers this app uses, which arrived in browsers later than WebAuthn. */
 export function assertPasskeysSupported(): void {
-  if (typeof window.PublicKeyCredential === "undefined")
+  const credential = window.PublicKeyCredential;
+  if (
+    typeof credential === "undefined" ||
+    typeof credential.parseCreationOptionsFromJSON !== "function" ||
+    typeof credential.parseRequestOptionsFromJSON !== "function"
+  ) {
     throw new PasskeyUnsupportedError();
+  }
 }
 
 // Browsers raise NotAllowedError for both "cancelled" and "timed out", on purpose, so a page

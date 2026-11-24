@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
-import { useNavigate } from "react-router";
+import { Navigate, useNavigate } from "react-router";
 import {
   assertPasskeysSupported,
   loginWithPasskey,
@@ -8,7 +8,7 @@ import {
   PasskeyUnsupportedError,
   registerPasskey,
 } from "@/features/auth/passkey";
-import { meQueryKey } from "@/features/auth/use-me";
+import { meQueryKey, useMe } from "@/features/auth/use-me";
 import { ApiError, apiFetch, UnauthorizedError } from "@/lib/api-client";
 
 const UNSUPPORTED =
@@ -70,6 +70,7 @@ export function LoginPage() {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const me = useMe();
 
   async function finish() {
     // Drop the cached 401 so the auth gate fetches the signed-in user fresh.
@@ -99,21 +100,43 @@ export function LoginPage() {
 
   function setUp(event: FormEvent) {
     event.preventDefault();
-    void run(async () => {
-      // Check first, so a browser that can't make a passkey never signs in without one.
+    void setUpThenSignIn();
+  }
+
+  async function setUpThenSignIn() {
+    setError(null);
+    setBusy(true);
+    try {
       assertPasskeysSupported();
       await apiFetch("/api/v1/setup", {
         method: "POST",
         body: JSON.stringify({ code }),
       });
       await registerPasskey();
-    }, setupMessage);
+    } catch (caught) {
+      setError(setupMessage(caught));
+      setBusy(false);
+      return;
+    }
+    // The setup code only unlocks passkey registration (ADR 0013). Sign in with the new passkey;
+    // if that fails, the passkey still exists, so the sign-in screen is the way back in.
+    setMode("sign-in");
+    try {
+      await loginWithPasskey();
+      await finish();
+    } catch (caught) {
+      setError(`Your passkey is set up. ${signInMessage(caught)}`);
+    } finally {
+      setBusy(false);
+    }
   }
 
   function switchMode(next: "sign-in" | "setup") {
     setError(null);
     setMode(next);
   }
+
+  if (me.isSuccess) return <Navigate to="/" replace />;
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6">

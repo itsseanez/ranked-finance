@@ -155,7 +155,7 @@ create table users (
     - `long count()`
 
 - [ ] **Step 1: Write the failing test** (a security rule: there is only ever one owner; plain finds and inserts get no tests of their own).
-  - `secondOwnerIsRejected`: `createOwner("sean@example.com","Owner")` succeeds; a second `createOwner` throws `IllegalStateException`; `count()` stays `1`.
+  - `secondOwnerIsRejected`: `createOwner("owner@example.com","Owner")` succeeds; a second `createOwner` throws `IllegalStateException`; `count()` stays `1`.
 - [ ] **Step 2: Run it to make sure it fails.** Run: `./mvnw test -Dtest=UserRepositoryTest`. Expected: compilation failure (no `UserRepository`).
 - [ ] **Step 3: Implement `User` and `UserRepository`.** Map rows with a `RowMapper` lambda; `createOwner` checks `count() > 0` first, in the same `@Transactional` method.
 - [ ] **Step 4: Run the test to make sure it passes.** Expected: PASS.
