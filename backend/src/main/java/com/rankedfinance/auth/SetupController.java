@@ -28,7 +28,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/setup")
 class SetupController {
 
-    record SetupRequest(String code) {}
+    record SetupRequest(String code) {
+        // Spring MVC logs parsed request bodies at DEBUG; keep the code out of the logs.
+        @Override
+        public String toString() {
+            return "SetupRequest[code=<redacted>]";
+        }
+    }
 
     private final SetupCode setupCode;
     private final OwnerProperties owner;

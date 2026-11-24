@@ -2,6 +2,8 @@ package com.rankedfinance.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -73,6 +75,39 @@ class SetupTest {
         setup(SETUP_CODE)
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("setup_closed"));
+    }
+
+    // Setup stays closed while a passkey exists, so the last one can't be deleted: otherwise anyone
+    // with the setup code could claim the instance again.
+    @Test
+    void cannotDeleteTheLastPasskey() throws Exception {
+        MockHttpSession session = signInThroughSetup();
+        ImmutableCredentialRecord passkey = aPasskey();
+        credentials.save(passkey);
+
+        mvc.perform(
+                        delete(
+                                        "/webauthn/register/"
+                                                + passkey.getCredentialId().toBase64UrlString())
+                                .session(session)
+                                .with(csrf()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("last_passkey"));
+
+        assertThat(credentials.findByCredentialId(passkey.getCredentialId())).isNotNull();
+        setup(SETUP_CODE).andExpect(jsonPath("$.error").value("setup_closed"));
+    }
+
+    // Spring's built-in passkey-management page would offer a delete button that bypasses the app.
+    @Test
+    void defaultPasskeyPageIsOff() throws Exception {
+        mvc.perform(get("/webauthn/register").session(signInThroughSetup()))
+                .andExpect(status().isNotFound());
+    }
+
+    private MockHttpSession signInThroughSetup() throws Exception {
+        MvcResult result = setup(SETUP_CODE).andExpect(status().isNoContent()).andReturn();
+        return (MockHttpSession) result.getRequest().getSession(false);
     }
 
     private ResultActions setup(String code) throws Exception {

@@ -14,6 +14,10 @@ class Passkeys {
     }
 
     /** Whether any passkey exists on this install. Once one does, first-run setup is closed. */
+    long count() {
+        return jdbcClient.sql("select count(*) from user_credentials").query(Long.class).single();
+    }
+
     boolean anyRegistered() {
         return jdbcClient
                 .sql("select exists (select 1 from user_credentials)")
