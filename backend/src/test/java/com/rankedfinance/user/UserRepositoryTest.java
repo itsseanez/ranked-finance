@@ -32,6 +32,24 @@ class UserRepositoryTest {
         assertThat(users.count()).isEqualTo(1);
     }
 
+    // One SQL statement, so two setups at once can't both create an owner or fail with a 500.
+    @Test
+    void findOrCreateOwnerCreatesTheOwnerOnce() {
+        User first = users.findOrCreateOwner("owner@example.com", "Owner").orElseThrow();
+        User second = users.findOrCreateOwner("owner@example.com", "Owner").orElseThrow();
+
+        assertThat(second).isEqualTo(first);
+        assertThat(users.count()).isEqualTo(1);
+    }
+
+    @Test
+    void findOrCreateOwnerFindsNoOneForAnotherEmail() {
+        users.createOwner("owner@example.com", "Owner");
+
+        assertThat(users.findOrCreateOwner("other@example.com", "Other")).isEmpty();
+        assertThat(users.count()).isEqualTo(1);
+    }
+
     @Test
     void findsTheOwnerByEmail() {
         User owner = users.createOwner("owner@example.com", "Owner");

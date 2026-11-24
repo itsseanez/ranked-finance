@@ -6,8 +6,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 // The first-run setup code (ADR 0012): the operator's SETUP_CODE when set, otherwise one generated
-// at
-// startup and printed to the log until the first passkey exists.
+// at startup. Printing it is FirstRunSetup's job (see FirstRunSetupTest).
 class SetupCodeTest {
 
     private static final String CONFIGURED = "operator-chosen-code-0123";
@@ -68,24 +67,5 @@ class SetupCodeTest {
             assertThat(code.matches("")).isFalse();
             assertThat(code.matches(null)).isFalse();
         }
-    }
-
-    @Test
-    void printsTheGeneratedCodeWhileSetupIsOpen() {
-        SetupCode code = generated();
-
-        assertThat(code.startupMessage(false))
-                .hasValueSatisfying(message -> assertThat(message).contains(code.value()));
-    }
-
-    @Test
-    void printsNothingOnceAPasskeyExists() {
-        assertThat(generated().startupMessage(true)).isEmpty();
-    }
-
-    // The operator already knows a code they chose, and it must never end up in the logs.
-    @Test
-    void neverPrintsAConfiguredCode() {
-        assertThat(configured().startupMessage(false)).isEmpty();
     }
 }

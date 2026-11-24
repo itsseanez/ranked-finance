@@ -177,4 +177,43 @@ describe("LoginPage", () => {
       "/login/webauthn",
     ]);
   });
+
+  // ADR 0013: if the sign-in right after setup fails, the passkey still exists, so the sign-in
+  // screen is the way back in.
+  it("offersSignInWhenSignInAfterSetupFails", async () => {
+    stubFetch({
+      "/api/v1/setup": () => new Response(null, { status: 204 }),
+      "/webauthn/register/options": () => Response.json({ challenge: "abc" }),
+      "/webauthn/register": () => Response.json({ success: true }),
+      "/webauthn/authenticate/options": () =>
+        Response.json({ challenge: "def" }),
+    });
+    stubCredentials({
+      create: vi
+        .fn()
+        .mockResolvedValue({ toJSON: () => ({ id: "new-passkey" }) }),
+      get: vi.fn().mockRejectedValue(new DOMException("", "NotAllowedError")),
+    });
+    renderLoginPage();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "First-time setup" }),
+    );
+    await userEvent.type(
+      screen.getByLabelText("Setup code"),
+      "some-setup-code-1234567",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create passkey" }),
+    );
+
+    expect(
+      await screen.findByText(
+        "Your passkey is set up. Sign-in was cancelled. Try again.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Continue with passkey" }),
+    ).toBeInTheDocument();
+  });
 });
