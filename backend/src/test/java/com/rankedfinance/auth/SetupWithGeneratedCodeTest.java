@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.rankedfinance.TestDatabase;
 import com.rankedfinance.TestcontainersConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -31,9 +32,7 @@ class SetupWithGeneratedCodeTest {
     // MockMvc requests commit, so each test cleans up after itself.
     @AfterEach
     void deleteEverything() {
-        jdbcClient.sql("delete from user_credentials").update();
-        jdbcClient.sql("delete from user_entities").update();
-        jdbcClient.sql("delete from users").update();
+        TestDatabase.deleteAllRows(jdbcClient);
     }
 
     @Test

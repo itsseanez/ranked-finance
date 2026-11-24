@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.rankedfinance.TestDatabase;
 import com.rankedfinance.TestcontainersConfiguration;
 import com.rankedfinance.user.UserRepository;
 import java.time.Instant;
@@ -49,9 +50,7 @@ class SetupTest {
     // MockMvc requests commit, so each test cleans up after itself.
     @AfterEach
     void deleteEverything() {
-        jdbcClient.sql("delete from user_credentials").update();
-        jdbcClient.sql("delete from user_entities").update();
-        jdbcClient.sql("delete from users").update();
+        TestDatabase.deleteAllRows(jdbcClient);
     }
 
     @Test
@@ -149,7 +148,7 @@ class SetupTest {
     }
 
     private static RequestPostProcessor owner() {
-        return user("owner@example.com").roles("OWNER");
+        return user("owner@example.com").roles(Roles.OWNER);
     }
 
     private MockHttpSession signInThroughSetup() throws Exception {
