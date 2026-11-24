@@ -43,11 +43,19 @@ public final class ApiProblems {
             JsonMapper json)
             throws IOException {
         ProblemDetail problem = of(status, code, detail);
+        // Optional members are left out when unset, as in a controller's response. (Spring
+        // Framework 7 leaves type null unless set; RFC 9457 reads a missing type as about:blank.)
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("type", problem.getType().toString());
-        body.put("title", problem.getTitle());
+        if (problem.getType() != null) {
+            body.put("type", problem.getType().toString());
+        }
+        if (problem.getTitle() != null) {
+            body.put("title", problem.getTitle());
+        }
         body.put("status", problem.getStatus());
-        body.put("detail", problem.getDetail());
+        if (problem.getDetail() != null) {
+            body.put("detail", problem.getDetail());
+        }
         body.putAll(problem.getProperties());
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
