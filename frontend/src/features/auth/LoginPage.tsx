@@ -15,10 +15,9 @@ const UNSUPPORTED =
   "This browser doesn't support passkeys. Try the latest Chrome, Safari, or Edge.";
 
 const SETUP_MESSAGES: Record<string, string> = {
-  invalid_setup_code: "That setup code isn't right.",
+  invalid_setup_code:
+    "That setup code isn't right. If the server restarted, use the newest code in its log.",
   setup_closed: "This app is already set up. Sign in with your passkey.",
-  setup_not_configured:
-    "Setup isn't configured on this server. Set SETUP_CODE and restart.",
 };
 
 function signInMessage(error: unknown): string {
@@ -141,8 +140,14 @@ export function LoginPage() {
         ) : (
           <form onSubmit={setUp} className="mt-2">
             <p className="text-neutral-600">
-              Enter the setup code from your server, then create a passkey on
-              this device.
+              Enter the setup code, then create a passkey on this device.
+            </p>
+            <p className="mt-3 text-sm text-neutral-600">
+              The server prints the code in its log when it starts, between two
+              rows of asterisks. Running it in Docker? Run{" "}
+              <code className="font-mono">docker logs</code> with the
+              container's name. If you set{" "}
+              <code className="font-mono">SETUP_CODE</code> yourself, use that.
             </p>
             <label
               htmlFor="setup-code"
