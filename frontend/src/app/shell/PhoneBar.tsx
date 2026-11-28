@@ -2,7 +2,8 @@ import { Menu, MessageCircle, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router";
 import { HeaderIcons } from "@/app/shell/HeaderIcons";
-import { healthLine, navItems } from "@/app/shell/nav";
+import { navItems } from "@/app/shell/nav";
+import { HealthLine } from "@/features/accounts/HealthLine";
 
 type PhoneBarProps = { unreadCount: number; onAsk: () => void };
 
@@ -86,10 +87,7 @@ export function PhoneBar({ unreadCount, onAsk }: PhoneBarProps) {
               <MessageCircle className="size-5" aria-hidden />
               Ask
             </button>
-            <p className="mt-3 flex items-center gap-2 border-t border-line px-4 pt-4 text-sm text-ink/70">
-              <span className="size-2 rounded-full bg-ink/30" aria-hidden />
-              {healthLine}
-            </p>
+            <HealthLine className="mt-3 flex items-center gap-2 border-t border-line px-4 pt-4 text-sm text-ink/70" />
           </nav>
         </div>
       )}

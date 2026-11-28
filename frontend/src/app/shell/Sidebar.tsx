@@ -1,5 +1,6 @@
 import { NavLink } from "react-router";
-import { healthLine, navItems } from "@/app/shell/nav";
+import { navItems } from "@/app/shell/nav";
+import { HealthLine } from "@/features/accounts/HealthLine";
 
 /** Desktop navigation (≥900px): sticky, full height, 220px wide. */
 export function Sidebar() {
@@ -27,13 +28,10 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <p className="mt-auto flex items-start gap-2 px-7 pb-6 text-xs text-ink/70">
-        <span
-          className="mt-1 size-2 shrink-0 rounded-full bg-ink/30"
-          aria-hidden
-        />
-        {healthLine}
-      </p>
+      <HealthLine
+        className="mt-auto flex items-start gap-2 px-7 pb-6 text-xs text-ink/70"
+        dotClassName="mt-1"
+      />
     </aside>
   );
 }

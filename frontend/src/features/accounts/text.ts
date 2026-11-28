@@ -1,0 +1,106 @@
+/** Every piece of UI text for the accounts feature and the Settings & accounts screen. */
+export const text = {
+  page: {
+    title: "Settings & accounts",
+    phoneTitle: "Accounts",
+    subtitle:
+      "Connections, hand-entered balances, and which goal each account funds.",
+    connect: "Connect an account",
+    phoneConnect: "Connect",
+    back: "Home",
+  },
+  health: {
+    none: "No accounts yet",
+    upToDate: (n: number) => `${n} up to date`,
+    // "1 needs attention", "2 need attention" (English plural rules, like the rest of this file).
+    needAttention: (m: number) =>
+      `${m} ${new Intl.PluralRules("en-US").select(m) === "one" ? "needs" : "need"} attention`,
+    separator: " · ",
+  },
+  list: {
+    loading: "Loading accounts…",
+    empty:
+      "No accounts yet. Connect one, or enter a balance by hand, to start counting your net worth.",
+  },
+  card: {
+    enteredByHand: "Entered by hand",
+    updated: (relative: string) => `updated ${relative}`,
+    separator: " · ",
+    accountCount: (n: number) => `${n} accounts`,
+    hidden: "Hidden",
+    needsUpdate: "Needs an update",
+    closed: (date: string) => `Closed ${date}`,
+    hideAccount: (name: string) => `Hide ${name}`,
+    unhideAccount: (name: string) => `Unhide ${name}`,
+  },
+  balanceForm: {
+    label: "Balance today",
+    update: "Update",
+    updating: "Updating…",
+    updated: "Balance updated.",
+  },
+  menu: {
+    open: (name: string) => `More actions for ${name}`,
+    rename: "Rename",
+    editDetails: "Edit details",
+    hide: "Hide",
+    unhide: "Unhide",
+    markClosed: "Mark closed",
+    reopen: "Reopen",
+    delete: "Delete",
+  },
+  kinds: {
+    cash: "Cash",
+    investment: "Investment",
+    retirement: "Retirement",
+    hsa: "HSA",
+    crypto: "Crypto",
+    debt: "Debt",
+  } as Record<string, string>,
+  reminders: {
+    two_weeks: "Every 2 weeks",
+    monthly: "Monthly",
+    quarterly: "Quarterly",
+    never: "Never",
+  } as Record<string, string>,
+  form: {
+    name: "Account name",
+    institution: "Institution (optional)",
+    institutionHint: "Accounts at the same institution share a card.",
+    kind: "Type",
+    balance: "Balance today",
+    balanceHint: "For a debt, enter what you owe as a positive amount.",
+    apr: "Interest rate (APR %)",
+    minimumPayment: "Minimum payment (optional)",
+    reminder: "Remind me to update it",
+    cancel: "Cancel",
+    save: "Save",
+    saving: "Saving…",
+    nameRequired: "Enter a name.",
+    invalidAmount: "Enter an amount like 1,250.00.",
+    aprRequired: "A debt needs an interest rate.",
+  },
+  add: {
+    title: "Add an account by hand",
+    submit: "Add account",
+    checking: "Checking…",
+    duplicateQuestion: (name: string) => `Is this the same as ${name}?`,
+    duplicateHint:
+      "If it is, its balance is updated instead, so nothing is counted twice.",
+    yes: "Yes",
+    no: "No, add it",
+  },
+  rename: { title: "Rename account" },
+  edit: { title: "Edit details" },
+  close: {
+    title: (name: string) => `Mark ${name} closed`,
+    body: "A closed account counts as zero from the day it closes. Its history stays, and you can reopen it.",
+    date: "Closed on",
+    confirm: "Mark closed",
+  },
+  remove: {
+    title: (name: string) => `Delete ${name}?`,
+    body: "This removes the account and its balance. It can't be undone.",
+    confirm: "Delete",
+  },
+};
