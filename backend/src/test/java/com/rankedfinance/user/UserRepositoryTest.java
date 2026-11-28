@@ -58,6 +58,15 @@ class UserRepositoryTest {
         assertThat(users.findByEmail("nobody@example.com")).isEmpty();
     }
 
+    @Test
+    void updatesTheTimeZone() {
+        User owner = users.createOwner("owner@example.com", "Owner");
+
+        users.updateTimeZone(owner.id(), "America/Vancouver");
+
+        assertThat(users.timeZone(owner.id())).isEqualTo(java.time.ZoneId.of("America/Vancouver"));
+    }
+
     // The Java check above can lose a race (two registrations at once both see zero users),
     // so the database itself must refuse a second row, even when the check is bypassed.
     @Test

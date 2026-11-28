@@ -98,6 +98,15 @@ public class UserRepository {
                         .single());
     }
 
+    /** Sets the user's time zone. The caller has already checked it's a valid zone id. */
+    public void updateTimeZone(UUID userId, String timeZone) {
+        jdbcClient
+                .sql("update users set time_zone = :timeZone where id = :id")
+                .param("timeZone", timeZone)
+                .param("id", userId)
+                .update();
+    }
+
     public String homeCurrency(UUID userId) {
         return jdbcClient
                 .sql("select home_currency from users where id = :id")
