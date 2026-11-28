@@ -34,6 +34,8 @@ export const text = {
   },
   balanceForm: {
     label: "Balance today",
+    debtLabel: "Amount owed today",
+    debtHint: "Enter what you owe as a positive amount.",
     update: "Update",
     updating: "Updating…",
     updated: "Balance updated.",

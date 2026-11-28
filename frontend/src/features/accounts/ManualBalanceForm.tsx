@@ -36,6 +36,12 @@ export function ManualBalanceForm({ account }: { account: Account }) {
   const [saved, setSaved] = useState(false);
   const setBalance = useSetBalance();
   const name = account.name ?? "";
+  // The card shows a debt as "-$X", but it's entered as the positive amount owed.
+  const isDebt = account.kind === "debt";
+  const describedBy =
+    [isDebt ? `${id}-hint` : null, error ? `${id}-error` : null]
+      .filter(Boolean)
+      .join(" ") || undefined;
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -69,7 +75,7 @@ export function ManualBalanceForm({ account }: { account: Account }) {
           htmlFor={id}
           className="text-[13px] text-ink/70 max-[899px]:sr-only"
         >
-          {text.balanceForm.label}
+          {isDebt ? text.balanceForm.debtLabel : text.balanceForm.label}
           <span className="sr-only"> {name}</span>
         </label>
         <input
@@ -83,7 +89,7 @@ export function ManualBalanceForm({ account }: { account: Account }) {
           inputMode="decimal"
           autoComplete="off"
           aria-invalid={Boolean(error)}
-          aria-describedby={error ? `${id}-error` : undefined}
+          aria-describedby={describedBy}
         />
         <button
           type="submit"
@@ -95,6 +101,11 @@ export function ManualBalanceForm({ account }: { account: Account }) {
             : text.balanceForm.update}
         </button>
       </div>
+      {isDebt && (
+        <p id={`${id}-hint`} className="text-[13px] text-ink/70">
+          {text.balanceForm.debtHint}
+        </p>
+      )}
       {error && (
         <p id={`${id}-error`} className="text-sm text-debt">
           {error}
