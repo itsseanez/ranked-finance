@@ -20,3 +20,4 @@ To add one, copy [template.md](template.md) to the next number. Don't rewrite an
 | [0012](0012-generated-setup-code-in-logs.md) | Generate the setup code when `SETUP_CODE` isn't set, and print it in the log | Accepted |
 | [0013](0013-setup-code-unlocks-registration-only.md) | The setup code unlocks passkey registration only | Accepted |
 | [0014](0014-api-error-codes.md) | API error codes | Accepted |
+| [0015](0015-database-roles.md) | Separate database roles for the app and for migrations | Accepted |

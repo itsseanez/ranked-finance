@@ -3,10 +3,17 @@ spring:
     name: ranked-finance
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/rankedfinance}
-    username: ${DB_USER:rankedfinance}
-    password: ${DB_PASSWORD:rankedfinance}
+    # The app's role reads and writes rows only; Flyway connects as the schema owner (ADR 0015).
+    username: ${DB_USER:rankedfinance_app}
+    password: ${DB_PASSWORD:rankedfinance_app}
   flyway:
     enabled: true
+    # Setting a Flyway user makes Boot open a separate connection for migrations as that user.
+    user: ${DB_MIGRATION_USER:rankedfinance}
+    password: ${DB_MIGRATION_PASSWORD:rankedfinance}
+    placeholders:
+      # Flyway replaces ${app_role} in migration SQL with this value, like a template variable.
+      app_role: ${DB_USER:rankedfinance_app}
   docker:
     compose:
       enabled: false # turned on only in the dev profile (application-dev.yaml)

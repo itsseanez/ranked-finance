@@ -5,6 +5,7 @@ Personal finance app built as a ranked game: users climb Iron → Bronze → Sil
 ## Commands
 Planned in the Milestone 1 plan; update this section once they exist (or re-run `/init`).
 - `docker compose up -d`: start Postgres (not needed when running the app: `spring-boot-docker-compose` starts it automatically)
+- `docker compose down -v`: one time only, if your local database was created before the `rankedfinance_app` role existed (ADR 0015). Init scripts in `db/init/` run only on an empty volume; this wipes local data, so sign in again through first-run setup afterwards.
 - `cd backend && ./mvnw test`: backend tests (Testcontainers needs Docker running)
 - `cd backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`: run the API on :8080
 - `cd frontend && npm run dev`: run the web app on :5173 (proxies `/api` to :8080)
@@ -55,7 +56,7 @@ Java 25, Spring Boot 4.x, Maven, Spring Security passkeys (spring-security-webau
 - API tokens are read-only in v1, shown once, and stored only as a hash.
 - Uploaded import files are parsed in memory, size-limited, and never stored or logged; only the resulting transactions are saved.
 - Every query is scoped to the logged-in user's `user_id`. SQL is always parameterized.
-- The app's database user reads and writes rows only; migrations run as a separate schema-owner user.
+- The app's database user reads and writes rows only; migrations run as a separate schema-owner user. Locally they are `rankedfinance_app` (`DB_USER`) and `rankedfinance` (`DB_MIGRATION_USER`); the operator creates both, and migrations only grant ([ADR 0015](docs/adr/0015-database-roles.md)).
 - Migrations and seed data contain no real data, emails, or passwords.
 - Never log tokens or full account numbers (a test checks log output).
 - New dependencies must be AGPL-compatible (MIT, Apache-2.0, BSD, LGPL; no proprietary or SSPL).

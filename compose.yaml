@@ -2,6 +2,10 @@
 services:
   db:
     image: postgres:19
+    labels:
+      # Boot's compose support still starts this service, but doesn't swap the app's datasource
+      # for POSTGRES_USER (the owner); the app uses application.yaml's roles instead (ADR 0015).
+      org.springframework.boot.ignore: "true"
     environment:
       POSTGRES_DB: rankedfinance
       POSTGRES_USER: rankedfinance
@@ -10,6 +14,8 @@ services:
       - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql
+      # Creates the app's restricted role; runs only when the volume is empty.
+      - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U rankedfinance -d rankedfinance"]
       interval: 2s
