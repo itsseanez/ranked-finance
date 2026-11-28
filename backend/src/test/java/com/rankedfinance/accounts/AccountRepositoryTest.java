@@ -70,6 +70,18 @@ class AccountRepositoryTest {
         assertThat(accounts.findById(owner, id)).contains(account);
     }
 
+    // Delete only needs to know 0, 1, or more, so the count stops at 2 instead of reading every
+    // snapshot of a 10-year history on each list.
+    @Test
+    void snapshotCountIsCappedAtTwo() {
+        UUID id = cashAccount();
+        for (int day = 1; day <= 3; day++) {
+            accounts.upsertSnapshot(owner, id, LocalDate.of(2026, 11, day), new BigDecimal("1.00"));
+        }
+
+        assertThat(accounts.findAll(owner).getFirst().snapshotCount()).isEqualTo(2);
+    }
+
     @Test
     void sameDaySnapshotOverwrites() {
         UUID id = cashAccount();

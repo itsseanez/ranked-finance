@@ -23,8 +23,12 @@ public class AccountRepository {
             select a.id, a.source, a.name, a.institution_name, a.last4, a.kind, a.currency, a.apr,
                    a.minimum_payment, a.update_reminder, a.hidden, a.closed_on,
                    latest.balance, latest.date as balance_as_of,
-                   (select count(*) from balance_snapshots s where s.account_id = a.id)
-                       as snapshot_count
+                   -- Capped at 2: delete only needs 0, 1, or more, so never count all history.
+                   (select count(*) from (
+                       select 1 from balance_snapshots s
+                       where s.account_id = a.id and s.user_id = :userId
+                       limit 2
+                   ) x) as snapshot_count
             from accounts a
             left join lateral (
                 select s.balance, s.date from balance_snapshots s
