@@ -58,6 +58,17 @@ class UserRepositoryTest {
         assertThat(users.findByEmail("nobody@example.com")).isEmpty();
     }
 
+    // design.md: the time zone is set from the browser at first sign-in. Null means "not set yet",
+    // so the frontend can tell it apart from a zone the user chose and never overwrite that.
+    @Test
+    void newOwnerHasNoTimeZoneUntilOneIsSet() {
+        User owner = users.createOwner("owner@example.com", "Owner");
+
+        assertThat(users.findById(owner.id()).orElseThrow().timeZone()).isNull();
+        // Until then, "today" uses the zone the column used to default to.
+        assertThat(users.timeZone(owner.id())).isEqualTo(java.time.ZoneId.of("America/New_York"));
+    }
+
     @Test
     void updatesTheTimeZone() {
         User owner = users.createOwner("owner@example.com", "Owner");

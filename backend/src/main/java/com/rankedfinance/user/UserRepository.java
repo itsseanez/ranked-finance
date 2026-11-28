@@ -88,14 +88,21 @@ public class UserRepository {
                 .optional();
     }
 
+    /**
+     * Used for "today" only until the browser sends the user's zone after first sign-in (null means
+     * not set yet). It's the zone the column used to default to.
+     */
+    static final ZoneId UNSET_TIME_ZONE = ZoneId.of("America/New_York");
+
     /** The user's time zone, which decides what "today" is for them. */
     public ZoneId timeZone(UUID userId) {
-        return ZoneId.of(
-                jdbcClient
-                        .sql("select time_zone from users where id = :id")
-                        .param("id", userId)
-                        .query(String.class)
-                        .single());
+        return jdbcClient
+                .sql("select time_zone from users where id = :id")
+                .param("id", userId)
+                .query(String.class)
+                .optional()
+                .map(ZoneId::of)
+                .orElse(UNSET_TIME_ZONE);
     }
 
     /** Sets the user's time zone. The caller has already checked it's a valid zone id. */

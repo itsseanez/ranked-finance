@@ -9,9 +9,10 @@ export function browserTimeZone(): string {
 }
 
 /**
- * Sends the browser's time zone once when it differs from the stored one (design.md: set from the
- * browser at first sign-in). The zone decides which day a balance belongs to. Tried once per page
- * load: a failure isn't retried in a loop, and the next load tries again.
+ * Sends the browser's time zone only while none is stored (design.md: set from the browser at first
+ * sign-in, then changed in Settings). The zone decides which day a balance belongs to, so opening
+ * the app in another zone while travelling never moves it. Tried once per page load: a failure
+ * isn't retried in a loop, and the next load tries again.
  */
 export function useSyncTimeZone(me: Me | undefined) {
   const queryClient = useQueryClient();
@@ -30,9 +31,10 @@ export function useSyncTimeZone(me: Me | undefined) {
   });
 
   useEffect(() => {
-    if (!me || attempted.current) return;
+    // null (or absent) means never set; any stored zone is the user's choice.
+    if (!me || attempted.current || me.timeZone != null) return;
     const zone = browserTimeZone();
-    if (!zone || zone === me.timeZone) return;
+    if (!zone) return;
     attempted.current = true;
     mutate(zone);
   }, [me, mutate]);

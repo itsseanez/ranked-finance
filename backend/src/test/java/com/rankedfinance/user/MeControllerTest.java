@@ -58,7 +58,8 @@ class MeControllerTest {
                 .andExpect(jsonPath("$.id").value(owner.id().toString()))
                 .andExpect(jsonPath("$.displayName").value("Owner"))
                 .andExpect(jsonPath("$.email").value("owner@example.com"))
-                .andExpect(jsonPath("$.timeZone").value("America/New_York"));
+                // Not set until the browser sends it after first sign-in.
+                .andExpect(jsonPath("$.timeZone").isEmpty());
     }
 
     // design.md: the time zone is set from the browser at first sign-in. It decides which day a

@@ -4,9 +4,10 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { RequireAuth } from "@/features/auth/RequireAuth";
 
-// design.md: the time zone is set from the browser at first sign-in. It decides which day a
-// balance belongs to, so the stored zone must follow the browser's.
-function stubServer(storedZone: string) {
+// design.md: the time zone is set from the browser at first sign-in, then only changed in
+// Settings. It decides which day a balance belongs to, so opening the app while travelling must
+// not move it. A null stored zone means it was never set.
+function stubServer(storedZone: string | null) {
   document.cookie = "XSRF-TOKEN=test-token";
   const fetchMock = vi.fn(
     async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -78,8 +79,8 @@ describe("RequireAuth time zone", () => {
     vi.restoreAllMocks();
   });
 
-  it("sendsTheBrowserZoneWhenItDiffersFromTheStoredOne", async () => {
-    const fetchMock = stubServer("America/New_York");
+  it("sendsTheBrowserZoneOnFirstSignIn", async () => {
+    const fetchMock = stubServer(null);
     stubBrowserZone("America/Los_Angeles");
 
     renderProtectedPage();
@@ -92,8 +93,8 @@ describe("RequireAuth time zone", () => {
     });
   });
 
-  it("sendsNothingWhenTheZonesMatch", async () => {
-    const fetchMock = stubServer("America/Los_Angeles");
+  it("neverOverwritesAStoredZone", async () => {
+    const fetchMock = stubServer("America/New_York");
     stubBrowserZone("America/Los_Angeles");
 
     renderProtectedPage();
