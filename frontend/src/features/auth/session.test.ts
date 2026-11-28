@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { safeNext, signedOutRedirect } from "@/features/auth/session";
+import { describe, expect, it, vi } from "vitest";
+import {
+  createSessionQueryClient,
+  safeNext,
+  signedOutRedirect,
+} from "@/features/auth/session";
 import { ApiError, UnauthorizedError } from "@/lib/api-client";
 
 describe("signedOutRedirect", () => {
@@ -31,5 +35,30 @@ describe("safeNext", () => {
     expect(safeNext("https://evil.example")).toBe("/");
     expect(safeNext("/\\evil.example")).toBe("/");
     expect(safeNext(null)).toBe("/");
+    expect(safeNext("/\t/evil.example")).toBe("/");
+    expect(safeNext("/\n/evil.example")).toBe("/");
+    expect(safeNext("/\r/evil.example")).toBe("/");
+  });
+});
+
+describe("createSessionQueryClient", () => {
+  const signedOut = () =>
+    Promise.reject(new UnauthorizedError({ error: "unauthenticated" }));
+
+  it("skipsTheRedirectOnlyOnTheLoginPageItself", async () => {
+    const navigate = vi.fn();
+    for (const path of ["/login", "/login?next=%2F"]) {
+      const client = createSessionQueryClient(navigate, () => path);
+      await client
+        .fetchQuery({ queryKey: ["a"], queryFn: signedOut })
+        .catch(() => {});
+    }
+    expect(navigate).not.toHaveBeenCalled();
+
+    const client = createSessionQueryClient(navigate, () => "/loginfoo");
+    await client
+      .fetchQuery({ queryKey: ["a"], queryFn: signedOut })
+      .catch(() => {});
+    expect(navigate).toHaveBeenCalledWith("/login?next=%2Floginfoo");
   });
 });

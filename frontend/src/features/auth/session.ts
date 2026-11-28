@@ -23,7 +23,8 @@ export function signedOutRedirect(
 
 /** The `?next=` value to return to after sign-in: a path on this site, otherwise home. */
 export function safeNext(next: string | null): string {
-  if (next && /^\/(?![/\\])/.test(next)) return next;
+  // Browsers strip tab, CR and LF from URLs, so "/\t/evil" would become "//evil".
+  if (next && /^\/(?![/\\])/.test(next) && !/[\t\r\n]/.test(next)) return next;
   return "/";
 }
 
@@ -40,7 +41,7 @@ export function createSessionQueryClient(
   const onError = (error: unknown) => {
     const path = currentPath();
     // Already on the sign-in screen: nothing to redirect (its own /me check fails the same way).
-    if (path.startsWith("/login")) return;
+    if (path.split(/[?#]/)[0] === "/login") return;
     const to = signedOutRedirect(error, path);
     if (to === null) return;
     client.clear();

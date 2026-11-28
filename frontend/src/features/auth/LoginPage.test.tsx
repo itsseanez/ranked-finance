@@ -274,4 +274,32 @@ describe("LoginPage", () => {
       expect(await screen.findByText("Home")).toBeInTheDocument();
     });
   });
+
+  // The setup code was already accepted (?setup=passkey): only register the passkey, never re-post
+  // the code. stubFetch throws on an unexpected /api/v1/setup call.
+  it("createsThePasskeyWithoutResendingTheSetupCode", async () => {
+    const credential = { toJSON: () => ({ id: "new-passkey" }) };
+    stubFetch({
+      "/webauthn/register/options": () => Response.json({ challenge: "abc" }),
+      "/webauthn/register": () => Response.json({ success: true }),
+      "/webauthn/authenticate/options": () =>
+        Response.json({ challenge: "def" }),
+      "/login/webauthn": () =>
+        Response.json({ authenticated: true, redirectUrl: "/" }),
+    });
+    stubCredentials({
+      create: vi.fn().mockResolvedValue(credential),
+      get: vi.fn().mockResolvedValue(credential),
+    });
+    renderLoginPage("/login?setup=passkey");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create your passkey" }),
+    );
+
+    expect(await screen.findByText("Home")).toBeInTheDocument();
+    const paths = vi.mocked(fetch).mock.calls.map(([input]) => String(input));
+    expect(paths).not.toContain("/api/v1/setup");
+    expect(paths).toContain("/webauthn/register");
+  });
 });
