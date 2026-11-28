@@ -6,7 +6,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.rankedfinance.TestDatabase;
+import com.rankedfinance.TestOwner;
 import com.rankedfinance.TestcontainersConfiguration;
+import com.rankedfinance.user.UserRepository;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,6 +29,12 @@ class SecurityTest {
 
     @Autowired MockMvc mvc;
     @Autowired JdbcClient jdbcClient;
+    @Autowired UserRepository users;
+
+    @AfterEach
+    void deleteEverything() {
+        TestDatabase.deleteAllRows(jdbcClient);
+    }
 
     @Test
     void apiRequiresAuth() throws Exception {
@@ -47,5 +59,22 @@ class SecurityTest {
     @WithMockUser
     void postWithoutCsrfIsForbidden() throws Exception {
         mvc.perform(post("/logout")).andExpect(status().isForbidden());
+    }
+
+    // Spring's registration names the passkey's user entity after Authentication.getName(), so the
+    // owner's principal must keep the email as its name or a second user entity would appear.
+    @Test
+    void ownerCanStillRequestPasskeyOptions() throws Exception {
+        UUID id = TestOwner.create(users);
+
+        mvc.perform(
+                        post("/webauthn/register/options")
+                                .with(TestOwner.asOwner(id, TestOwner.EMAIL))
+                                .with(csrf()))
+                .andExpect(status().isOk());
+
+        List<String> userEntityNames =
+                jdbcClient.sql("select name from user_entities").query(String.class).list();
+        assertThat(userEntityNames).containsExactly(TestOwner.EMAIL);
     }
 }

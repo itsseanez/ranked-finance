@@ -1,6 +1,5 @@
 package com.rankedfinance.user;
 
-import java.security.Principal;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,10 +16,10 @@ class MeController {
         this.users = users;
     }
 
-    /** The signed-in user. The principal's name is their email (see OwnerUserDetailsService). */
+    /** The signed-in user. */
     @GetMapping("/me")
-    MeResponse me(Principal principal) {
-        return users.findByEmail(principal.getName())
+    MeResponse me(CurrentUser current) {
+        return users.findById(current.id())
                 .map(user -> new MeResponse(user.id(), user.displayName(), user.email()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }

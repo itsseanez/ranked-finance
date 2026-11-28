@@ -72,6 +72,21 @@ public class UserRepository {
                 .optional();
     }
 
+    /** Finds a user by id: the signed-in user's id from {@link CurrentUser}. */
+    public Optional<User> findById(UUID id) {
+        return jdbcClient
+                .sql(
+                        """
+                        select id, email, display_name, birth_year, sex, marital_status,
+                               living_situation, country, time_zone, home_currency
+                        from users
+                        where id = :id
+                        """)
+                .param("id", id)
+                .query(User.class)
+                .optional();
+    }
+
     /**
      * Counts every user on the install. Deliberately not scoped to one user: it guards the
      * single-owner rule.

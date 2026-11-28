@@ -1,15 +1,15 @@
 package com.rankedfinance.user;
 
+import static com.rankedfinance.TestOwner.asOwner;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.rankedfinance.TestDatabase;
+import com.rankedfinance.TestOwner;
 import com.rankedfinance.TestcontainersConfiguration;
-import com.rankedfinance.auth.Roles;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +29,7 @@ class MeControllerTest {
 
     @Autowired MockMvc mvc;
     @Autowired JdbcClient jdbcClient;
+    @Autowired UserRepository users;
 
     @AfterEach
     void deleteEverything() {
@@ -46,9 +47,11 @@ class MeControllerTest {
                                 .content("{\"code\":\"test-setup-code-0123456789\"}"))
                 .andExpect(status().isNoContent());
 
-        mvc.perform(get("/api/v1/me").with(user("owner@example.com").roles(Roles.OWNER)))
+        User owner = users.findByEmail(TestOwner.EMAIL).orElseThrow();
+
+        mvc.perform(get("/api/v1/me").with(asOwner(owner.id(), owner.email())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.id").value(owner.id().toString()))
                 .andExpect(jsonPath("$.displayName").value("Owner"))
                 .andExpect(jsonPath("$.email").value("owner@example.com"));
     }
