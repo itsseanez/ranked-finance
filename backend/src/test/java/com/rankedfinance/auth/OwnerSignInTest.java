@@ -3,6 +3,7 @@ package com.rankedfinance.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.rankedfinance.TestOwner;
 import com.rankedfinance.TestcontainersConfiguration;
 import com.rankedfinance.user.OwnerPrincipal;
 import com.rankedfinance.user.UserRepository;
@@ -27,22 +28,22 @@ class OwnerSignInTest {
 
     @Test
     void mapsTheOwnersEmailToTheirId() {
-        UUID id = users.createOwner("owner@example.com", "Owner").id();
+        UUID id = TestOwner.create(users);
 
-        Authentication authentication = ownerSignIn.signedIn("owner@example.com");
+        Authentication authentication = ownerSignIn.signedIn(TestOwner.EMAIL);
 
         assertThat(authentication.isAuthenticated()).isTrue();
         assertThat(authentication.getPrincipal())
-                .isEqualTo(new OwnerPrincipal(id, "owner@example.com"));
+                .isEqualTo(new OwnerPrincipal(id, TestOwner.EMAIL));
         // Spring's passkey registration finds the user entity by this name.
-        assertThat(authentication.getName()).isEqualTo("owner@example.com");
+        assertThat(authentication.getName()).isEqualTo(TestOwner.EMAIL);
         assertThat(AuthorityUtils.authorityListToSet(authentication.getAuthorities()))
                 .containsExactly(Roles.authority(Roles.OWNER));
     }
 
     @Test
     void unknownEmailIsRefused() {
-        users.createOwner("owner@example.com", "Owner");
+        TestOwner.create(users);
 
         assertThatThrownBy(() -> ownerSignIn.signedIn("stranger@example.com"))
                 .isInstanceOf(BadCredentialsException.class);

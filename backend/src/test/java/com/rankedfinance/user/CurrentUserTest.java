@@ -52,4 +52,14 @@ class CurrentUserTest {
         mvc.perform(get("/api/v1/me").with(user(TestOwner.EMAIL).roles(Roles.SETUP)))
                 .andExpect(status().isForbidden());
     }
+
+    // The URL rule lets ROLE_OWNER through, so this 403 comes from CurrentUserArgumentResolver:
+    // without the owner's id, a controller must never run.
+    @Test
+    void ownerRoleWithoutTheOwnersIdIsRefused() throws Exception {
+        TestOwner.create(users);
+
+        mvc.perform(get("/api/v1/me").with(user(TestOwner.EMAIL).roles(Roles.OWNER)))
+                .andExpect(status().isForbidden());
+    }
 }

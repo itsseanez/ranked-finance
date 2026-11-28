@@ -2,6 +2,7 @@ package com.rankedfinance.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.rankedfinance.TestOwner;
 import com.rankedfinance.TestcontainersConfiguration;
 import com.rankedfinance.user.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -23,11 +24,11 @@ class OwnerUserDetailsServiceTest {
 
     @Test
     void ownerGetsTheOwnerRole() {
-        users.createOwner("owner@example.com", "Owner");
+        TestOwner.create(users);
 
-        UserDetails owner = userDetailsService.loadUserByUsername("owner@example.com");
+        UserDetails owner = userDetailsService.loadUserByUsername(TestOwner.EMAIL);
 
-        assertThat(owner.getUsername()).isEqualTo("owner@example.com");
+        assertThat(owner.getUsername()).isEqualTo(TestOwner.EMAIL);
         assertThat(AuthorityUtils.authorityListToSet(owner.getAuthorities()))
                 .containsExactly(Roles.authority(Roles.OWNER));
     }
