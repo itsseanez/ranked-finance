@@ -23,3 +23,5 @@ Locally, `db/init/01-app-role.sql` creates the app role with a local-only passwo
 - Existing local databases need one `docker compose down -v`, because init scripts run only on an empty volume.
 - New migrations need no grants of their own as long as the owner creates the tables (default privileges cover them). A new schema needs its own grants.
 - Flyway placeholder replacement is on, so a migration that needs a literal `${` must escape it or turn placeholders off for that file.
+- V4 runs once. Changing `DB_USER` after install leaves the new role with no grants; re-run V4's grants for it by hand (or point `DB_USER` back at the original role).
+- `DB_USER` and `DB_MIGRATION_USER` must be different roles. With one role for both, a non-superuser loses its own rights on `flyway_schema_history` through V4's revoke and the next migration fails; a superuser passes silently and the app runs as the schema owner, which defeats this ADR.
