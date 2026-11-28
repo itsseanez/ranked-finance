@@ -1,6 +1,7 @@
 package com.rankedfinance.auth;
 
-import com.rankedfinance.common.ApiProblems;
+import com.rankedfinance.errors.ApiProblems;
+import com.rankedfinance.errors.ErrorCode;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -8,7 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
@@ -49,8 +49,7 @@ public class LastPasskeyGuard {
                 if (DELETE_PASSKEY.matches(request) && !firstRunSetup.mayRemovePasskey()) {
                     ApiProblems.write(
                             response,
-                            HttpStatus.CONFLICT,
-                            "last_passkey",
+                            ErrorCode.LAST_PASSKEY,
                             "You can't delete your only passkey. Add another one first.",
                             json);
                     return;

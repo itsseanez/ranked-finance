@@ -62,6 +62,34 @@
       }
     },
     {
+      "files": ["src/features/accounts/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/features/**",
+                  "!@/features/accounts",
+                  "!@/features/accounts/**"
+                ],
+                "message": "A feature never imports another feature. Move shared code to @/components or @/lib."
+              },
+              {
+                "group": ["@/app", "@/app/**"],
+                "message": "Features don't import the app shell."
+              },
+              {
+                "regex": "^\\.\\./(\\.\\./|[^./][^/]*/)",
+                "message": "Import other folders with @/ (for example @/lib/api-client)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["src/features/home/**"],
       "rules": {
         "no-restricted-imports": [

@@ -1,5 +1,6 @@
 package com.rankedfinance.user;
 
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -70,6 +71,55 @@ public class UserRepository {
                 .param("email", email)
                 .query(User.class)
                 .optional();
+    }
+
+    /** Finds a user by id: the signed-in user's id from {@link CurrentUser}. */
+    public Optional<User> findById(UUID id) {
+        return jdbcClient
+                .sql(
+                        """
+                        select id, email, display_name, birth_year, sex, marital_status,
+                               living_situation, country, time_zone, home_currency
+                        from users
+                        where id = :id
+                        """)
+                .param("id", id)
+                .query(User.class)
+                .optional();
+    }
+
+    /**
+     * Used for "today" only until the browser sends the user's zone after first sign-in (null means
+     * not set yet). It's the zone the column used to default to.
+     */
+    static final ZoneId UNSET_TIME_ZONE = ZoneId.of("America/New_York");
+
+    /** The user's time zone, which decides what "today" is for them. */
+    public ZoneId timeZone(UUID userId) {
+        return jdbcClient
+                .sql("select time_zone from users where id = :id")
+                .param("id", userId)
+                .query(String.class)
+                .optional()
+                .map(ZoneId::of)
+                .orElse(UNSET_TIME_ZONE);
+    }
+
+    /** Sets the user's time zone. The caller has already checked it's a valid zone id. */
+    public void updateTimeZone(UUID userId, String timeZone) {
+        jdbcClient
+                .sql("update users set time_zone = :timeZone where id = :id")
+                .param("timeZone", timeZone)
+                .param("id", userId)
+                .update();
+    }
+
+    public String homeCurrency(UUID userId) {
+        return jdbcClient
+                .sql("select home_currency from users where id = :id")
+                .param("id", userId)
+                .query(String.class)
+                .single();
     }
 
     /**

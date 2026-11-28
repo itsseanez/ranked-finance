@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
-import { Navigate, useNavigate } from "react-router";
+import { Navigate, useNavigate, useSearchParams } from "react-router";
 import {
   assertPasskeysSupported,
   loginWithPasskey,
@@ -8,17 +8,13 @@ import {
   PasskeyUnsupportedError,
   registerPasskey,
 } from "@/features/auth/passkey";
+import { safeNext } from "@/features/auth/session";
 import { meQueryKey, useMe } from "@/features/auth/use-me";
 import { ApiError, apiFetch, UnauthorizedError } from "@/lib/api-client";
+import { messageFor } from "@/lib/errors";
 
 const UNSUPPORTED =
   "This browser doesn't support passkeys. Try the latest Chrome, Safari, or Edge.";
-
-const SETUP_MESSAGES: Record<string, string> = {
-  invalid_setup_code:
-    "That setup code isn't right. If the server restarted, use the newest code in its log.",
-  setup_closed: "This app is already set up. Sign in with your passkey.",
-};
 
 function signInMessage(error: unknown): string {
   if (error instanceof PasskeyCancelledError)
@@ -33,9 +29,7 @@ function setupMessage(error: unknown): string {
   if (error instanceof PasskeyCancelledError)
     return "Passkey setup was cancelled. Try again.";
   if (error instanceof PasskeyUnsupportedError) return UNSUPPORTED;
-  if (error instanceof ApiError && error.code && SETUP_MESSAGES[error.code]) {
-    return SETUP_MESSAGES[error.code];
-  }
+  if (error instanceof ApiError && error.code) return messageFor(error);
   return "Setup didn't finish. Try again.";
 }
 
@@ -66,7 +60,12 @@ const linkButton =
 export function LoginPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [mode, setMode] = useState<"sign-in" | "setup">("sign-in");
+  const [params] = useSearchParams();
+  const next = safeNext(params.get("next"));
+  // ?setup=passkey: the setup code was already accepted, so only the passkey step is left.
+  const [mode, setMode] = useState<"sign-in" | "setup" | "passkey">(
+    params.get("setup") === "passkey" ? "passkey" : "sign-in",
+  );
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -75,7 +74,7 @@ export function LoginPage() {
   async function finish() {
     // Drop the cached 401 so the auth gate fetches the signed-in user fresh.
     queryClient.removeQueries({ queryKey: meQueryKey });
-    await navigate("/", { replace: true });
+    await navigate(next, { replace: true });
   }
 
   async function run(
@@ -103,15 +102,21 @@ export function LoginPage() {
     void setUpThenSignIn();
   }
 
-  async function setUpThenSignIn() {
+  function createPasskey() {
+    void setUpThenSignIn(false);
+  }
+
+  async function setUpThenSignIn(withCode = true) {
     setError(null);
     setBusy(true);
     try {
       assertPasskeysSupported();
-      await apiFetch("/api/v1/setup", {
-        method: "POST",
-        body: JSON.stringify({ code }),
-      });
+      if (withCode) {
+        await apiFetch("/api/v1/setup", {
+          method: "POST",
+          body: JSON.stringify({ code }),
+        });
+      }
       await registerPasskey();
     } catch (caught) {
       setError(setupMessage(caught));
@@ -131,9 +136,9 @@ export function LoginPage() {
     }
   }
 
-  function switchMode(next: "sign-in" | "setup") {
+  function switchMode(target: "sign-in" | "setup") {
     setError(null);
-    setMode(next);
+    setMode(target);
   }
 
   if (me.isSuccess) return <Navigate to="/" replace />;
@@ -158,6 +163,21 @@ export function LoginPage() {
               disabled={busy}
             >
               Continue with passkey
+            </button>
+          </>
+        ) : mode === "passkey" ? (
+          <>
+            <p className="mt-2 text-neutral-600">
+              Your setup code was accepted. Create a passkey on this device to
+              finish.
+            </p>
+            <button
+              type="button"
+              className={`${button} mt-8`}
+              onClick={createPasskey}
+              disabled={busy}
+            >
+              Create your passkey
             </button>
           </>
         ) : (

@@ -39,13 +39,14 @@ function problem(status: number, error: string): Response {
   });
 }
 
-function renderLoginPage() {
+function renderLoginPage(entry = "/login") {
   const router = createMemoryRouter(
     [
       { path: "/login", element: <LoginPage /> },
       { path: "/", element: <p>Home</p> },
+      { path: "/settings", element: <p>Settings</p> },
     ],
-    { initialEntries: ["/login"] },
+    { initialEntries: [entry] },
   );
   render(
     <QueryClientProvider
@@ -117,6 +118,28 @@ describe("LoginPage", () => {
     expect(
       await screen.findByText(
         "This app is already set up. Sign in with your passkey.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("showsOwnerMismatchMessage", async () => {
+    stubFetch({ "/api/v1/setup": () => problem(409, "owner_mismatch") });
+    renderLoginPage();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "First-time setup" }),
+    );
+    await userEvent.type(
+      screen.getByLabelText("Setup code"),
+      "some-setup-code-1234567",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create passkey" }),
+    );
+
+    expect(
+      await screen.findByText(
+        "This server is set up for a different owner email. Check OWNER_EMAIL.",
       ),
     ).toBeInTheDocument();
   });
@@ -215,5 +238,68 @@ describe("LoginPage", () => {
     expect(
       screen.getByRole("button", { name: "Continue with passkey" }),
     ).toBeInTheDocument();
+  });
+
+  describe("after sign-in", () => {
+    const signInHandlers = () => {
+      const credential = { toJSON: () => ({ id: "passkey" }) };
+      stubFetch({
+        "/webauthn/authenticate/options": () =>
+          Response.json({ challenge: "abc" }),
+        "/login/webauthn": () =>
+          Response.json({ authenticated: true, redirectUrl: "/" }),
+      });
+      stubCredentials({ get: vi.fn().mockResolvedValue(credential) });
+    };
+
+    it("returnsToNextAfterSignIn", async () => {
+      signInHandlers();
+      renderLoginPage("/login?next=%2Fsettings");
+
+      await userEvent.click(
+        screen.getByRole("button", { name: "Continue with passkey" }),
+      );
+
+      expect(await screen.findByText("Settings")).toBeInTheDocument();
+    });
+
+    it("ignoresAnOffSiteNext", async () => {
+      signInHandlers();
+      renderLoginPage("/login?next=%2F%2Fevil.example");
+
+      await userEvent.click(
+        screen.getByRole("button", { name: "Continue with passkey" }),
+      );
+
+      expect(await screen.findByText("Home")).toBeInTheDocument();
+    });
+  });
+
+  // The setup code was already accepted (?setup=passkey): only register the passkey, never re-post
+  // the code. stubFetch throws on an unexpected /api/v1/setup call.
+  it("createsThePasskeyWithoutResendingTheSetupCode", async () => {
+    const credential = { toJSON: () => ({ id: "new-passkey" }) };
+    stubFetch({
+      "/webauthn/register/options": () => Response.json({ challenge: "abc" }),
+      "/webauthn/register": () => Response.json({ success: true }),
+      "/webauthn/authenticate/options": () =>
+        Response.json({ challenge: "def" }),
+      "/login/webauthn": () =>
+        Response.json({ authenticated: true, redirectUrl: "/" }),
+    });
+    stubCredentials({
+      create: vi.fn().mockResolvedValue(credential),
+      get: vi.fn().mockResolvedValue(credential),
+    });
+    renderLoginPage("/login?setup=passkey");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create your passkey" }),
+    );
+
+    expect(await screen.findByText("Home")).toBeInTheDocument();
+    const paths = vi.mocked(fetch).mock.calls.map(([input]) => String(input));
+    expect(paths).not.toContain("/api/v1/setup");
+    expect(paths).toContain("/webauthn/register");
   });
 });

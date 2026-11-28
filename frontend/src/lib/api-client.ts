@@ -10,7 +10,10 @@ export class ApiError extends Error {
     this.body = body;
   }
 
-  /** The `error` code from a problem detail, such as "setup_closed". */
+  /**
+   * The `error` code from a problem detail, such as "setup_closed". A plain string, not ErrorCode:
+   * a newer server may send codes this build doesn't know (ADR 0014). lib/errors.ts maps it.
+   */
   get code(): string | undefined {
     const body = this.body;
     if (
@@ -31,17 +34,6 @@ export class UnauthorizedError extends ApiError {
     super(401, body);
     this.name = "UnauthorizedError";
   }
-}
-
-/**
- * Whether an API error means "not signed in": a 401, or a 403 from a setup-only session (ADR 0013),
- * which can register a passkey but not use the app.
- */
-export function isSignedOut(error: unknown): boolean {
-  return (
-    error instanceof UnauthorizedError ||
-    (error instanceof ApiError && error.status === 403)
-  );
 }
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);

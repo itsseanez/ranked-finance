@@ -1,16 +1,15 @@
 import { type QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ComponentProps } from "react";
 import { RouterProvider } from "react-router/dom";
-import { createQueryClient } from "@/app/query-client";
 import { router as appRouter } from "@/app/router";
+import { createSessionQueryClient } from "@/features/auth/session";
 
 type AppRouter = ComponentProps<typeof RouterProvider>["router"];
 
-const appQueryClient = createQueryClient(() => {
-  if (appRouter.state.location.pathname !== "/login") {
-    void appRouter.navigate("/login", { replace: true });
-  }
-});
+const appQueryClient = createSessionQueryClient(
+  (to) => void appRouter.navigate(to, { replace: true }),
+  () => appRouter.state.location.pathname + appRouter.state.location.search,
+);
 
 export function AppProviders({
   router,

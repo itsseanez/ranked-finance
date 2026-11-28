@@ -5,6 +5,7 @@ Personal finance app built as a ranked game: users climb Iron → Bronze → Sil
 ## Commands
 Planned in the Milestone 1 plan; update this section once they exist (or re-run `/init`).
 - `docker compose up -d`: start Postgres (not needed when running the app: `spring-boot-docker-compose` starts it automatically)
+- `docker compose down -v`: one time only, if your local database was created before the `rankedfinance_app` role existed (ADR 0015). Init scripts in `db/init/` run only on an empty volume; this wipes local data, so sign in again through first-run setup afterwards.
 - `cd backend && ./mvnw test`: backend tests (Testcontainers needs Docker running)
 - `cd backend && ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev`: run the API on :8080
 - `cd frontend && npm run dev`: run the web app on :5173 (proxies `/api` to :8080)
@@ -18,7 +19,7 @@ Planned in the Milestone 1 plan; update this section once they exist (or re-run 
 - `ROADMAP.md`: the milestones in order. `docs/plans/`: the step-by-step plan for the current milestone.
 - `docs/adr/`: architecture decision records. Add a new numbered ADR when making a hard-to-reverse technical decision (framework, library, data model, license).
 - `design/images/`: UI mockups. Local only (git-ignored); if missing, ask for a screenshot instead of guessing a layout.
-- `backend/src/main/java/com/rankedfinance/`: one package per feature (`auth`, `user`, `sync`, `imports`, `categories`, `accounts`, `networth`, `ranks`, `plan`, `ai`, `notifications`) holding its controller, service, repository, and records. `config/` is for cross-cutting configuration only; `common/` for small types several features share. Tests mirror the main packages.
+- `backend/src/main/java/com/rankedfinance/`: one package per feature (`auth`, `user`, `sync`, `imports`, `categories`, `accounts`, `networth`, `ranks`, `plan`, `ai`, `notifications`) holding its controller, service, repository, and records. `config/` is for cross-cutting configuration only; `errors/` is the one place failures are shaped (`ErrorCode`, `ApiException`, problem details; ADR 0014); `common/` for small types several features share. Tests mirror the main packages.
 - `frontend/src/`: `app/` (providers, router, shell) → `features/<name>/` (same names as the backend) → shared `components/`, `lib/`, `styles/`. A feature never imports another feature; shared code moves to `components/` or `lib/` (Oxlint enforces this in `frontend/.oxlintrc.json`; a new feature folder needs its own override there). Import with the `@/` alias.
 - `frontend/src/lib/api-schema.d.ts` is generated; never edit it.
 - `sync/` holds the `DataProvider` interface with one subpackage per provider (`sync/plaid`, `sync/simplefin`). `imports/` parses CSV, OFX/QFX, and QIF files. Nothing outside `sync/` and `imports/` touches provider types; everything else reads the normalized tables.
@@ -51,11 +52,12 @@ Java 25, Spring Boot 4.x, Maven, Spring Security passkeys (spring-security-webau
 
 ## Security
 - Secrets (Plaid keys and access tokens, SimpleFIN access URLs, the encryption key, AI API keys) never appear in the repo, logs, errors, or API responses. The one exception is the generated first-run setup code, printed once at startup while setup is open ([ADR 0012](docs/adr/0012-generated-setup-code-in-logs.md)). Config reads them from environment variables (AWS Secrets Manager or KMS only on the hosted deployment).
+- Provider tokens are encrypted with AES-256-GCM via `TokenCipher` ([ADR 0016](docs/adr/0016-token-encryption.md)). Make the key with `openssl rand -base64 32` and set it as `ENCRYPTION_KEY`; back it up with the database, because losing it means re-linking every account.
 - Verify every Plaid webhook signature (`Plaid-Verification` JWT); reject failures.
 - API tokens are read-only in v1, shown once, and stored only as a hash.
 - Uploaded import files are parsed in memory, size-limited, and never stored or logged; only the resulting transactions are saved.
 - Every query is scoped to the logged-in user's `user_id`. SQL is always parameterized.
-- The app's database user reads and writes rows only; migrations run as a separate schema-owner user.
+- The app's database user reads and writes rows only; migrations run as a separate schema-owner user. Locally they are `rankedfinance_app` (`DB_USER`) and `rankedfinance` (`DB_MIGRATION_USER`); the operator creates both, and migrations only grant ([ADR 0015](docs/adr/0015-database-roles.md)).
 - Migrations and seed data contain no real data, emails, or passwords.
 - Never log tokens or full account numbers (a test checks log output).
 - New dependencies must be AGPL-compatible (MIT, Apache-2.0, BSD, LGPL; no proprietary or SSPL).

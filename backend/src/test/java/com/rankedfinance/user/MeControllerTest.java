@@ -1,15 +1,19 @@
 package com.rankedfinance.user;
 
+import static com.rankedfinance.TestOwner.asOwner;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.rankedfinance.TestDatabase;
+import com.rankedfinance.TestOwner;
 import com.rankedfinance.TestcontainersConfiguration;
-import com.rankedfinance.auth.Roles;
+import java.time.ZoneId;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +33,7 @@ class MeControllerTest {
 
     @Autowired MockMvc mvc;
     @Autowired JdbcClient jdbcClient;
+    @Autowired UserRepository users;
 
     @AfterEach
     void deleteEverything() {
@@ -46,10 +51,58 @@ class MeControllerTest {
                                 .content("{\"code\":\"test-setup-code-0123456789\"}"))
                 .andExpect(status().isNoContent());
 
-        mvc.perform(get("/api/v1/me").with(user("owner@example.com").roles(Roles.OWNER)))
+        User owner = users.findByEmail(TestOwner.EMAIL).orElseThrow();
+
+        mvc.perform(get("/api/v1/me").with(asOwner(owner.id(), owner.email())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.id").value(owner.id().toString()))
                 .andExpect(jsonPath("$.displayName").value("Owner"))
-                .andExpect(jsonPath("$.email").value("owner@example.com"));
+                .andExpect(jsonPath("$.email").value("owner@example.com"))
+                // Not set until the browser sends it after first sign-in.
+                .andExpect(jsonPath("$.timeZone").isEmpty());
+    }
+
+    // design.md: the time zone is set from the browser at first sign-in. It decides which day a
+    // balance belongs to, so a West Coast evening must not land on tomorrow.
+    @Test
+    void setsTheTimeZoneFromTheBrowser() throws Exception {
+        UUID id = TestOwner.create(users);
+
+        mvc.perform(
+                        put("/api/v1/me/time-zone")
+                                .with(asOwner(id, TestOwner.EMAIL))
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"timeZone\":\"America/Los_Angeles\"}"))
+                .andExpect(status().isNoContent());
+
+        assertThat(users.timeZone(id)).isEqualTo(ZoneId.of("America/Los_Angeles"));
+    }
+
+    @Test
+    void anUnknownTimeZoneIsAValidationError() throws Exception {
+        UUID id = TestOwner.create(users);
+
+        for (String zone : new String[] {"Mars/Olympus", "", "+99:00"}) {
+            mvc.perform(
+                            put("/api/v1/me/time-zone")
+                                    .with(asOwner(id, TestOwner.EMAIL))
+                                    .with(csrf())
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content("{\"timeZone\":\"" + zone + "\"}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error").value("validation_failed"))
+                    .andExpect(jsonPath("$.errors[0].field").value("timeZone"));
+        }
+        mvc.perform(
+                        put("/api/v1/me/time-zone")
+                                .with(asOwner(id, TestOwner.EMAIL))
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("timeZone"));
+
+        assertThat(users.timeZone(id)).isEqualTo(ZoneId.of("America/New_York"));
     }
 }
