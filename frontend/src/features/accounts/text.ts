@@ -30,7 +30,6 @@ export const text = {
     hidden: "Hidden",
     needsUpdate: "Needs an update",
     closed: (date: string) => `Closed ${date}`,
-    hideAccount: (name: string) => `Hide ${name}`,
     unhideAccount: (name: string) => `Unhide ${name}`,
   },
   balanceForm: {

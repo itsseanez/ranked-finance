@@ -107,6 +107,41 @@ describe("AddManualAccountDialog (duplicate-account matching)", () => {
     expect(posts("/api/v1/accounts/manual")).toHaveLength(0);
   });
 
+  it("movesFocusToTheQuestion", async () => {
+    withMatch();
+    renderDialog();
+
+    await fillAndSubmit();
+    await screen.findByText("Is this the same as Fidelity Roth IRA?");
+
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "No, add it" }),
+    );
+    expect(document.activeElement?.closest("dialog")).not.toBeNull();
+  });
+
+  it("showsAFailedYesNextToTheQuestion", async () => {
+    withMatch({
+      "PUT /api/v1/accounts/a1/balance": () =>
+        new Response(JSON.stringify({ status: 409, error: "conflict" }), {
+          status: 409,
+          headers: { "Content-Type": "application/problem+json" },
+        }),
+    });
+    const { onClose } = renderDialog();
+
+    await fillAndSubmit();
+    await userEvent.click(await screen.findByRole("button", { name: "Yes" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "That change couldn't be made. Reload the page and try again.",
+    );
+    expect(
+      screen.getByText("Is this the same as Fidelity Roth IRA?"),
+    ).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
   it("sameAccountUpdatesTheExistingBalance", async () => {
     withMatch({
       "PUT /api/v1/accounts/a1/balance": () =>

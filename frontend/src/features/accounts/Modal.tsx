@@ -37,7 +37,12 @@ export function Modal({ title, onClose, children }: ModalProps) {
       if (items.length === 0) return;
       const firstItem = items[0];
       const lastItem = items[items.length - 1];
-      if (event.shiftKey && document.activeElement === firstItem) {
+      // Focus outside the panel (for example on <body> after a focused button unmounted): pull it
+      // back in rather than let Tab move to the page behind.
+      if (!panel.current.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey ? lastItem : firstItem).focus();
+      } else if (event.shiftKey && document.activeElement === firstItem) {
         event.preventDefault();
         lastItem.focus();
       } else if (!event.shiftKey && document.activeElement === lastItem) {

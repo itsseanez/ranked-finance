@@ -50,11 +50,16 @@ export function AddManualAccountDialog({ onClose }: { onClose: () => void }) {
     findMatches.isPending || create.isPending || setExistingBalance.isPending;
   const isDebt = kind === "debt";
 
+  /**
+   * Field errors send the user back to the form to fix them; anything else is shown where the
+   * user is (the form, or next to the duplicate question).
+   */
   const showError = (error: unknown) => {
     const byField = fieldErrors(error);
-    setPending(null);
+    const hasFieldErrors = Object.keys(byField).length > 0;
+    if (hasFieldErrors) setPending(null);
     setErrors(byField);
-    setRequestError(Object.keys(byField).length > 0 ? null : messageFor(error));
+    setRequestError(hasFieldErrors ? null : messageFor(error));
   };
 
   /** The request from the form, or null after showing what needs fixing. */
@@ -99,6 +104,7 @@ export function AddManualAccountDialog({ onClose }: { onClose: () => void }) {
     try {
       const matches = await findMatches.mutateAsync(request);
       if (matches.length > 0) {
+        setRequestError(null);
         setPending({ request, match: matches[0] });
         return;
       }
@@ -124,7 +130,9 @@ export function AddManualAccountDialog({ onClose }: { onClose: () => void }) {
 
   if (pending) {
     return (
+      // Its own key: switching views mounts a fresh Modal, which moves focus into the new content.
       <Modal
+        key="question"
         title={text.add.duplicateQuestion(pending.match.name ?? "")}
         onClose={onClose}
       >
@@ -153,7 +161,7 @@ export function AddManualAccountDialog({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Modal title={text.add.title} onClose={onClose}>
+    <Modal key="form" title={text.add.title} onClose={onClose}>
       <form noValidate onSubmit={onSubmit} className="flex flex-col gap-4">
         <Field label={text.form.name} error={errors.name}>
           {(props) => (

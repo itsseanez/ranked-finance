@@ -132,7 +132,7 @@ function AccountRow({
             </span>
           )}
           {account.needsUpdate && !closed && !hidden && (
-            <span className={`${badge} border-amber-200 bg-amber-50 text-warn`}>
+            <span className={`${badge} border-warn bg-card text-warn`}>
               <TriangleAlert className="size-3" aria-hidden />
               {text.card.needsUpdate}
             </span>

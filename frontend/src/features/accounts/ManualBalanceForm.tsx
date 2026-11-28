@@ -23,6 +23,15 @@ function editableAmount(balance: string | undefined): string {
 export function ManualBalanceForm({ account }: { account: Account }) {
   const id = useId();
   const [value, setValue] = useState(() => editableAmount(account.balance));
+  // When the balance changes elsewhere (a refetch, the add dialog's "Yes"), show the new one,
+  // unless the user is mid-edit. Otherwise Update would send the old figure and revert it.
+  const [seededFrom, setSeededFrom] = useState(account.balance);
+  if (account.balance !== seededFrom) {
+    setSeededFrom(account.balance);
+    if (value === editableAmount(seededFrom)) {
+      setValue(editableAmount(account.balance));
+    }
+  }
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const setBalance = useSetBalance();
