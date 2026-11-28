@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/itsseanez/ranked-finance/compare/v0.1.0...v0.2.0) (2026-11-28)
+
+
+### Features
+
+* **accounts:** add manual accounts, error codes, and a least-privilege db user ([68970d9](https://github.com/itsseanez/ranked-finance/commit/68970d98685603fe072b309cd39e7b626ebff24c))
+
 ## 0.1.0 (2026-11-24)
 
 
