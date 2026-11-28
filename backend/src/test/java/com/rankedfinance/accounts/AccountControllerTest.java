@@ -280,6 +280,57 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.balance").value("999999999999.99"));
     }
 
+    // Postgres rejects a NUL byte in text with an error, which would be a 500.
+    @Test
+    void controlCharactersInNamesAreRejected() throws Exception {
+        send(
+                        post("/api/v1/accounts/manual"),
+                        "{\"name\":\"Sav\\u0000ings\",\"kind\":\"cash\",\"balance\":\"1\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("validation_failed"))
+                .andExpect(jsonPath("$.errors[0].field").value("name"));
+        send(
+                        post("/api/v1/accounts/manual"),
+                        "{\"name\":\"Savings\",\"institutionName\":\"Bank\\u0000\","
+                                + "\"kind\":\"cash\",\"balance\":\"1\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("institutionName"));
+
+        UUID id = create("Savings", "cash", "10");
+        send(patch("/api/v1/accounts/" + id), "{\"name\":\"New\\u0000\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("name"));
+        send(patch("/api/v1/accounts/" + id), "{\"institutionName\":\"\\u0007Bank\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("institutionName"));
+    }
+
+    @Test
+    void namesLongerThanOneHundredCharactersAreRejected() throws Exception {
+        String longest = "a".repeat(100);
+        String tooLong = "a".repeat(101);
+        send(post("/api/v1/accounts/manual"), createJson(tooLong, "cash", "1", null))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("validation_failed"))
+                .andExpect(jsonPath("$.errors[0].field").value("name"));
+        send(
+                        post("/api/v1/accounts/manual"),
+                        "{\"name\":\"X\",\"institutionName\":\"%s\",\"kind\":\"cash\",\"balance\":\"1\"}"
+                                .formatted(tooLong))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("institutionName"));
+
+        UUID id = create(longest, "cash", "10");
+        send(patch("/api/v1/accounts/" + id), "{\"name\":\"%s\"}".formatted(tooLong))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("name"));
+        send(patch("/api/v1/accounts/" + id), "{\"institutionName\":\"%s\"}".formatted(tooLong))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("institutionName"));
+        send(patch("/api/v1/accounts/" + id), "{\"institutionName\":\"%s\"}".formatted(longest))
+                .andExpect(status().isOk());
+    }
+
     // v1 allows one user (a unique index, and the app's DB user can't drop it), so a second user
     // row can't exist. Instead the account belongs to the owner and the requests are made as a
     // different signed-in id, which is what another user's request looks like to the queries.

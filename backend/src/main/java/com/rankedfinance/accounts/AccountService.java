@@ -80,6 +80,8 @@ public class AccountService {
     // wrapped around this method: an exception rolls everything back.
     @Transactional
     public AccountResponse createManual(UUID userId, CreateManualAccountRequest request) {
+        checkName("name", request.name());
+        checkName("institutionName", request.institutionName());
         AccountKind kind = parseKind(request.kind());
         BigDecimal balance = parseMoney("balance", request.balance());
         if (kind != AccountKind.CASH && balance.signum() < 0) {
@@ -132,8 +134,10 @@ public class AccountService {
             if (request.name().isBlank()) {
                 throw ApiException.invalidField("name", "Name can't be blank.");
             }
+            checkName("name", request.name());
             name = request.name().strip();
         }
+        checkName("institutionName", request.institutionName());
         BigDecimal apr = request.apr() == null ? account.apr() : parseApr(request.apr());
         if (account.kind() == AccountKind.DEBT
                 && account.source() == AccountSource.MANUAL
@@ -237,6 +241,25 @@ public class AccountService {
 
     private static String blankToNull(String value) {
         return value == null || value.isBlank() ? null : value.strip();
+    }
+
+    private static final int MAX_NAME_LENGTH = 100;
+
+    /**
+     * Names are at most 100 characters (after trimming) with no control characters. Postgres
+     * rejects a NUL byte in text, so without this a NUL would be a 500 instead of a 400.
+     */
+    private static void checkName(String field, String value) {
+        if (value == null) {
+            return;
+        }
+        if (value.strip().length() > MAX_NAME_LENGTH) {
+            throw ApiException.invalidField(
+                    field, "Use " + MAX_NAME_LENGTH + " characters or fewer.");
+        }
+        if (value.chars().anyMatch(Character::isISOControl)) {
+            throw ApiException.invalidField(field, "Remove the control characters.");
+        }
     }
 
     private static AccountKind parseKind(String value) {
