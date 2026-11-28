@@ -1,5 +1,6 @@
 package com.rankedfinance.user;
 
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -85,6 +86,24 @@ public class UserRepository {
                 .param("id", id)
                 .query(User.class)
                 .optional();
+    }
+
+    /** The user's time zone, which decides what "today" is for them. */
+    public ZoneId timeZone(UUID userId) {
+        return ZoneId.of(
+                jdbcClient
+                        .sql("select time_zone from users where id = :id")
+                        .param("id", userId)
+                        .query(String.class)
+                        .single());
+    }
+
+    public String homeCurrency(UUID userId) {
+        return jdbcClient
+                .sql("select home_currency from users where id = :id")
+                .param("id", userId)
+                .query(String.class)
+                .single();
     }
 
     /**

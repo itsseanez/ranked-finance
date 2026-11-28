@@ -22,3 +22,4 @@ To add one, copy [template.md](template.md) to the next number. Don't rewrite an
 | [0014](0014-api-error-codes.md) | API error codes | Accepted |
 | [0015](0015-database-roles.md) | Separate database roles for the app and for migrations | Accepted |
 | [0016](0016-token-encryption.md) | Encrypt provider tokens with AES-256-GCM from the JDK | Accepted |
+| [0017](0017-money-as-decimal-strings.md) | Money crosses the API as decimal strings | Accepted |
