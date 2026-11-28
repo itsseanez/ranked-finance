@@ -113,11 +113,12 @@ function AccountRow({
 
   return (
     <li
-      className={`flex flex-wrap items-center gap-x-4 gap-y-3 py-3 ${
+      className={`flex flex-wrap items-start gap-x-4 gap-y-3 py-3 ${
         isDimmed(account) ? "-mx-3 rounded-xl bg-page px-3 text-ink/70" : ""
       }`}
     >
-      <div className="min-w-0 flex-1">
+      {/* Top-aligned and at least as tall as the input row, so a message under the form never moves the name. */}
+      <div className="flex min-h-11 min-w-0 flex-1 flex-col justify-center">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[15px]">{label}</span>
           {hidden && (
@@ -145,7 +146,7 @@ function AccountRow({
 
       {/* Desktop: the inline form replaces the amount. Phones: the form gets its own line. */}
       <span
-        className={`text-[15px] font-semibold tabular-nums ${
+        className={`flex min-h-11 items-center text-[15px] font-semibold tabular-nums ${
           editable ? "min-[900px]:hidden" : ""
         }`}
       >

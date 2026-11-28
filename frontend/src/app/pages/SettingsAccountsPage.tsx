@@ -42,7 +42,8 @@ export function SettingsAccountsPage() {
           <span className="max-[899px]:hidden">{text.page.connect}</span>
         </button>
       </header>
-      <div className="mt-6 grid gap-6 min-[1200px]:grid-cols-[minmax(0,1fr)_436px]">
+      {/* One column until M7 adds the right-hand sections; an empty 436px column squeezed the cards. */}
+      <div className="mt-6 max-w-[720px]">
         <AccountList />
       </div>
       {adding && <AddManualAccountDialog onClose={() => setAdding(false)} />}
