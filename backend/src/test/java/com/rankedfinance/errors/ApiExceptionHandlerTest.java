@@ -26,7 +26,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @WebMvcTest(controllers = ApiExceptionHandlerTest.FailingController.class)
 @AutoConfigureMockMvc(addFilters = false)
-@ExtendWith(OutputCaptureExtension.class) // Captures the expected ERROR log instead of printing it.
+// Captures log output (it's still printed too) so the test can check what was logged.
+@ExtendWith(OutputCaptureExtension.class)
 @Import(ApiExceptionHandlerTest.FailingController.class)
 class ApiExceptionHandlerTest {
 
@@ -65,8 +66,10 @@ class ApiExceptionHandlerTest {
                         .getContentAsString();
 
         assertThat(body).doesNotContain("token");
-        // The client gets nothing, so the server log is where the bug can be found.
-        assertThat(output).contains("Unhandled exception").contains("access-sandbox-token-123");
+        // The client gets nothing, so the server log is where the bug can be found. Only the
+        // log line and exception class are pinned here: whether the message itself may be logged
+        // (it can hold a token) is the redaction work in M2b, not something to lock in.
+        assertThat(output).contains("Unhandled exception").contains("java.lang.RuntimeException");
     }
 
     @Test
