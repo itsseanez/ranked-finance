@@ -36,6 +36,9 @@ app:
     display-name: ${OWNER_DISPLAY_NAME:Owner}
   setup:
     code: ${SETUP_CODE:} # first-run setup code (ADR 0010); at least 20 characters when set
+  encryption:
+    key: ${ENCRYPTION_KEY:} # base64 for 32 bytes (openssl rand -base64 32); encrypts provider tokens (ADR 0016)
+    key-version: ${ENCRYPTION_KEY_VERSION:1}
   webauthn:
     rp-id: ${WEBAUTHN_RP_ID:localhost} # the domain passkeys are tied to; every install sets its own
     origins: ${WEBAUTHN_ORIGINS:http://localhost:5173,http://localhost:8080}

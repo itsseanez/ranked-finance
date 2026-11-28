@@ -52,6 +52,7 @@ Java 25, Spring Boot 4.x, Maven, Spring Security passkeys (spring-security-webau
 
 ## Security
 - Secrets (Plaid keys and access tokens, SimpleFIN access URLs, the encryption key, AI API keys) never appear in the repo, logs, errors, or API responses. The one exception is the generated first-run setup code, printed once at startup while setup is open ([ADR 0012](docs/adr/0012-generated-setup-code-in-logs.md)). Config reads them from environment variables (AWS Secrets Manager or KMS only on the hosted deployment).
+- Provider tokens are encrypted with AES-256-GCM via `TokenCipher` ([ADR 0016](docs/adr/0016-token-encryption.md)). Make the key with `openssl rand -base64 32` and set it as `ENCRYPTION_KEY`; back it up with the database, because losing it means re-linking every account.
 - Verify every Plaid webhook signature (`Plaid-Verification` JWT); reject failures.
 - API tokens are read-only in v1, shown once, and stored only as a hash.
 - Uploaded import files are parsed in memory, size-limited, and never stored or logged; only the resulting transactions are saved.
