@@ -1,16 +1,21 @@
+import { MutationObserver } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { createMemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppProviders } from "@/app/App";
-import { createQueryClient } from "@/app/query-client";
 import { routes } from "@/app/router";
+import { createSessionQueryClient } from "@/features/auth/session";
 import { apiFetch } from "@/lib/api-client";
 
 type Responses = Record<string, () => Response>;
 
 const signedIn = () =>
   Response.json({ id: "1", displayName: "Owner", email: "owner@example.com" });
-const status = (code: number) => () => new Response(null, { status: code });
+const problem = (code: number, error: string) => () =>
+  new Response(JSON.stringify({ status: code, error }), {
+    status: code,
+    headers: { "Content-Type": "application/problem+json" },
+  });
 
 /** Renders the whole app at `path`, answering API calls from `responses` (path → response). */
 function renderApp(path: string, responses: Responses) {
@@ -30,8 +35,9 @@ function renderApp(path: string, responses: Responses) {
     }),
   );
   const router = createMemoryRouter(routes, { initialEntries: [path] });
-  const queryClient = createQueryClient(
-    () => void router.navigate("/login", { replace: true }),
+  const queryClient = createSessionQueryClient(
+    (to) => void router.navigate(to, { replace: true }),
+    () => router.state.location.pathname + router.state.location.search,
   );
   render(<AppProviders router={router} queryClient={queryClient} />);
   return { router, queryClient };
@@ -43,7 +49,9 @@ afterEach(() => {
 
 describe("auth gate", () => {
   it("redirectsToLoginOn401", async () => {
-    const { router } = renderApp("/", { "/api/v1/me": status(401) });
+    const { router } = renderApp("/", {
+      "/api/v1/me": problem(401, "unauthenticated"),
+    });
 
     expect(
       await screen.findByRole("button", { name: "Continue with passkey" }),
@@ -55,10 +63,11 @@ describe("auth gate", () => {
   it("redirectsToLoginWhenAnyQueryGets401", async () => {
     let sessionExpired = false;
     const { router, queryClient } = renderApp("/", {
-      "/api/v1/me": () => (sessionExpired ? status(401)() : signedIn()),
+      "/api/v1/me": () =>
+        sessionExpired ? problem(401, "unauthenticated")() : signedIn(),
       "/api/v1/other": () => {
         sessionExpired = true;
-        return status(401)();
+        return problem(401, "unauthenticated")();
       },
     });
     await screen.findByRole("heading", { name: "Home" });
@@ -85,12 +94,86 @@ describe("auth gate", () => {
     expect(router.state.location.pathname).toBe("/");
   });
 
-  // A setup-only session (passkey setup didn't finish) can't use the app: the API answers 403.
-  it("redirectsToLoginForASetupOnlySession", async () => {
-    renderApp("/", { "/api/v1/me": status(403) });
+  it("redirectsToLoginWithNextOn401", async () => {
+    const { router } = renderApp("/settings", {
+      "/api/v1/me": problem(401, "unauthenticated"),
+    });
 
     expect(
       await screen.findByRole("button", { name: "Continue with passkey" }),
     ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/login");
+    expect(router.state.location.search).toBe("?next=%2Fsettings");
+  });
+
+  it("redirectsWhenAMutationGets401", async () => {
+    let sessionExpired = false;
+    const { router, queryClient } = renderApp("/", {
+      "/api/v1/me": () =>
+        sessionExpired ? problem(401, "unauthenticated")() : signedIn(),
+      "/api/v1/things": () => {
+        sessionExpired = true;
+        return problem(401, "unauthenticated")();
+      },
+    });
+    await screen.findByRole("heading", { name: "Home" });
+
+    await new MutationObserver(queryClient, {
+      mutationFn: () => apiFetch("/api/v1/things", { method: "DELETE" }),
+    })
+      .mutate()
+      .catch(() => {});
+
+    expect(
+      await screen.findByRole("button", { name: "Continue with passkey" }),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/login");
+  });
+
+  it("forgetsCachedDataWhenSignedOut", async () => {
+    let sessionExpired = false;
+    const { queryClient } = renderApp("/", {
+      "/api/v1/me": () =>
+        sessionExpired ? problem(401, "unauthenticated")() : signedIn(),
+      "/api/v1/other": () => {
+        sessionExpired = true;
+        return problem(401, "unauthenticated")();
+      },
+    });
+    await screen.findByRole("heading", { name: "Home" });
+    queryClient.setQueryData(["accounts"], [{ id: "a1" }]);
+
+    await queryClient
+      .fetchQuery({
+        queryKey: ["other"],
+        queryFn: () => apiFetch("/api/v1/other"),
+      })
+      .catch(() => {});
+    await screen.findByRole("button", { name: "Continue with passkey" });
+
+    expect(queryClient.getQueryData(["accounts"])).toBeUndefined();
+    expect(queryClient.getQueryData(["me"])).toBeUndefined();
+  });
+
+  // A setup-only session (passkey setup didn't finish) can't use the app. The setup code was
+  // already accepted, so login goes straight to creating the passkey.
+  it("setupSessionGoesToThePasskeyStep", async () => {
+    const { router } = renderApp("/", {
+      "/api/v1/me": problem(403, "setup_incomplete"),
+    });
+
+    expect(
+      await screen.findByRole("button", { name: "Create your passkey" }),
+    ).toBeInTheDocument();
+    expect(router.state.location.search).toBe("?setup=passkey");
+  });
+
+  it("forbiddenNeverRedirects", async () => {
+    const { router } = renderApp("/", {
+      "/api/v1/me": problem(403, "forbidden"),
+    });
+
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/");
   });
 });

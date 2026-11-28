@@ -39,13 +39,14 @@ function problem(status: number, error: string): Response {
   });
 }
 
-function renderLoginPage() {
+function renderLoginPage(entry = "/login") {
   const router = createMemoryRouter(
     [
       { path: "/login", element: <LoginPage /> },
       { path: "/", element: <p>Home</p> },
+      { path: "/settings", element: <p>Settings</p> },
     ],
-    { initialEntries: ["/login"] },
+    { initialEntries: [entry] },
   );
   render(
     <QueryClientProvider
@@ -237,5 +238,40 @@ describe("LoginPage", () => {
     expect(
       screen.getByRole("button", { name: "Continue with passkey" }),
     ).toBeInTheDocument();
+  });
+
+  describe("after sign-in", () => {
+    const signInHandlers = () => {
+      const credential = { toJSON: () => ({ id: "passkey" }) };
+      stubFetch({
+        "/webauthn/authenticate/options": () =>
+          Response.json({ challenge: "abc" }),
+        "/login/webauthn": () =>
+          Response.json({ authenticated: true, redirectUrl: "/" }),
+      });
+      stubCredentials({ get: vi.fn().mockResolvedValue(credential) });
+    };
+
+    it("returnsToNextAfterSignIn", async () => {
+      signInHandlers();
+      renderLoginPage("/login?next=%2Fsettings");
+
+      await userEvent.click(
+        screen.getByRole("button", { name: "Continue with passkey" }),
+      );
+
+      expect(await screen.findByText("Settings")).toBeInTheDocument();
+    });
+
+    it("ignoresAnOffSiteNext", async () => {
+      signInHandlers();
+      renderLoginPage("/login?next=%2F%2Fevil.example");
+
+      await userEvent.click(
+        screen.getByRole("button", { name: "Continue with passkey" }),
+      );
+
+      expect(await screen.findByText("Home")).toBeInTheDocument();
+    });
   });
 });

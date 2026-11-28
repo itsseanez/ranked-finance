@@ -36,17 +36,6 @@ export class UnauthorizedError extends ApiError {
   }
 }
 
-/**
- * Whether an API error means "not signed in": a 401, or a 403 from a setup-only session (ADR 0013),
- * which can register a passkey but not use the app.
- */
-export function isSignedOut(error: unknown): boolean {
-  return (
-    error instanceof UnauthorizedError ||
-    (error instanceof ApiError && error.status === 403)
-  );
-}
-
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
 
 function readCookie(name: string): string | undefined {
