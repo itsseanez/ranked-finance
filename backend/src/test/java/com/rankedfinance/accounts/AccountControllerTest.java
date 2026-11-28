@@ -250,4 +250,101 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.upToDate").value(1))
                 .andExpect(jsonPath("$.needsAttention").value(0));
     }
+
+    @Test
+    void exponentNotationIsRejectedAndReturnsQuickly() throws Exception {
+        for (String bad : new String[] {"1e3", "1e99999999", "0x10", "1,000", " "}) {
+            send(post("/api/v1/accounts/manual"), createJson("X", "cash", bad, null))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.error").value("validation_failed"))
+                    .andExpect(jsonPath("$.errors[0].field").value("balance"));
+        }
+        send(post("/api/v1/accounts/manual"), createJson("X", "debt", "1", "1e99999999"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("apr"));
+    }
+
+    @Test
+    void amountsTooLargeForTheColumnAreRejected() throws Exception {
+        send(post("/api/v1/accounts/manual"), createJson("X", "cash", "1000000000000", null))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("balance"));
+        send(
+                        post("/api/v1/accounts/manual"),
+                        "{\"name\":\"X\",\"kind\":\"cash\",\"balance\":\"1\","
+                                + "\"minimumPayment\":\"1000000000000\"}")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("minimumPayment"));
+        send(post("/api/v1/accounts/manual"), createJson("Big", "cash", "999999999999.99", null))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.balance").value("999999999999.99"));
+    }
+
+    // v1 allows one user (a unique index, and the app's DB user can't drop it), so a second user
+    // row can't exist. Instead the account belongs to the owner and the requests are made as a
+    // different signed-in id, which is what another user's request looks like to the queries.
+    @Test
+    void anotherUsersAccountIsNotFoundAndStaysUnchanged() throws Exception {
+        UUID id = create("Theirs", "cash", "7");
+        RequestPostProcessor stranger = asOwner(UUID.randomUUID(), "stranger@example.com");
+        String url = "/api/v1/accounts/" + id;
+        mvc.perform(
+                        put(url + "/balance")
+                                .with(stranger)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"balance\":\"1\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("not_found"));
+        mvc.perform(
+                        patch(url)
+                                .with(stranger)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"name\":\"Mine\"}"))
+                .andExpect(status().isNotFound());
+        mvc.perform(
+                        post(url + "/close")
+                                .with(stranger)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"closedOn\":\"2026-11-27\"}"))
+                .andExpect(status().isNotFound());
+        mvc.perform(
+                        post(url + "/reopen")
+                                .with(stranger)
+                                .with(csrf())
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{}"))
+                .andExpect(status().isNotFound());
+        mvc.perform(delete(url).with(stranger).with(csrf())).andExpect(status().isNotFound());
+        Account theirs = accounts.findById(ownerId, id).orElseThrow();
+        assertThat(theirs.name()).isEqualTo("Theirs");
+        assertThat(theirs.closedOn()).isNull();
+        assertThat(theirs.balance()).isEqualByComparingTo("7");
+    }
+
+    @Test
+    void settingTheBalanceOfANonManualAccountIsAConflict() throws Exception {
+        // An import account has no connection, so it can be inserted directly.
+        UUID id = insertOwnedAccount("import");
+        send(put("/api/v1/accounts/" + id + "/balance"), "{\"balance\":\"1\"}")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("conflict"));
+    }
+
+    private UUID insertOwnedAccount(String source) {
+        UUID id = UUID.randomUUID();
+        jdbcClient
+                .sql(
+                        """
+                        insert into accounts (id, user_id, source, name, kind, currency)
+                        values (:id, :userId, :source, 'Imported', 'cash', 'USD')
+                        """)
+                .param("id", id)
+                .param("userId", ownerId)
+                .param("source", source)
+                .update();
+        return id;
+    }
 }

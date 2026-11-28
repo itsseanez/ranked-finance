@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -254,18 +255,19 @@ public class AccountService {
         }
     }
 
-    /** Parses a decimal string and rejects fractions of a cent. */
+    // Checked before new BigDecimal(...): "1e99999999" would otherwise make setScale build a
+    // huge number and exhaust memory. At most 12 integer digits fits numeric(14,2).
+    private static final Pattern MONEY = Pattern.compile("[+-]?\\d{1,12}(\\.\\d{1,2})?");
+    private static final Pattern APR = Pattern.compile("\\d{1,3}(\\.\\d{1,3})?");
+
+    /** Parses a plain decimal string: no exponent, at most 2 decimals, fits numeric(14,2). */
     private static BigDecimal parseMoney(String field, String text) {
-        BigDecimal value;
-        try {
-            value = new BigDecimal(text.strip());
-        } catch (NumberFormatException e) {
-            throw ApiException.invalidField(field, "Enter an amount like 1234.56.");
+        String stripped = text.strip();
+        if (!MONEY.matcher(stripped).matches()) {
+            throw ApiException.invalidField(
+                    field, "Enter an amount like 1234.56 (up to 12 digits, 2 decimals).");
         }
-        if (value.scale() > 2) {
-            throw ApiException.invalidField(field, "Use at most 2 decimal places.");
-        }
-        return value.setScale(2);
+        return new BigDecimal(stripped).setScale(2);
     }
 
     private static BigDecimal parseOptionalMoney(String field, String text) {
@@ -284,17 +286,13 @@ public class AccountService {
         if (text == null || text.isBlank()) {
             return null;
         }
-        BigDecimal value;
-        try {
-            value = new BigDecimal(text.strip());
-        } catch (NumberFormatException e) {
-            throw ApiException.invalidField("apr", "Enter a rate like 19.99.");
+        String stripped = text.strip();
+        if (!APR.matcher(stripped).matches()) {
+            throw ApiException.invalidField("apr", "Enter a rate like 19.99 (up to 3 decimals).");
         }
-        if (value.signum() < 0 || value.compareTo(HUNDRED) > 0) {
+        BigDecimal value = new BigDecimal(stripped);
+        if (value.compareTo(HUNDRED) > 0) {
             throw ApiException.invalidField("apr", "The rate must be between 0 and 100.");
-        }
-        if (value.scale() > 3) {
-            throw ApiException.invalidField("apr", "Use at most 3 decimal places.");
         }
         return value;
     }
