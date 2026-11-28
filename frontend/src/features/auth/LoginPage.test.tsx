@@ -121,6 +121,28 @@ describe("LoginPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("showsOwnerMismatchMessage", async () => {
+    stubFetch({ "/api/v1/setup": () => problem(409, "owner_mismatch") });
+    renderLoginPage();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "First-time setup" }),
+    );
+    await userEvent.type(
+      screen.getByLabelText("Setup code"),
+      "some-setup-code-1234567",
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Create passkey" }),
+    );
+
+    expect(
+      await screen.findByText(
+        "This server is set up for a different owner email. Check OWNER_EMAIL.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   // Older browsers have WebAuthn but not the JSON helpers this app relies on.
   it("showsUnsupportedMessageWithoutJsonHelpers", async () => {
     vi.stubGlobal("PublicKeyCredential", {});

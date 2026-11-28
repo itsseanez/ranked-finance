@@ -61,7 +61,7 @@ export interface components {
              * @description Machine-readable code; clients must handle codes they don't know.
              * @enum {string}
              */
-            error: "unauthenticated" | "setup_incomplete" | "forbidden" | "setup_closed" | "setup_not_configured" | "invalid_setup_code" | "not_found" | "validation_failed" | "conflict" | "method_not_allowed" | "internal_error";
+            error: "unauthenticated" | "setup_incomplete" | "forbidden" | "setup_closed" | "setup_not_configured" | "invalid_setup_code" | "not_found" | "validation_failed" | "conflict" | "method_not_allowed" | "internal_error" | "last_passkey" | "owner_mismatch";
             errors?: {
                 field: string;
                 message: string;

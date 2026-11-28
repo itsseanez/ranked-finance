@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -96,5 +97,38 @@ class PasskeySignInTest {
         mvc.perform(get("/api/v1/me").session(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()));
+    }
+
+    // A refused passkey answers like every other 401 (ADR 0014), without the reason it failed.
+    @Test
+    void refusedPasskeyIsUnauthenticated() throws Exception {
+        TestOwner.create(users);
+        when(passkeyOperations.createCredentialRequestOptions(any()))
+                .thenReturn(
+                        PublicKeyCredentialRequestOptions.builder()
+                                .challenge(Bytes.random())
+                                .rpId("localhost")
+                                .build());
+        when(passkeyOperations.authenticate(any()))
+                .thenThrow(new IllegalArgumentException("signature-check-failed-detail"));
+        MockHttpSession session = new MockHttpSession();
+
+        mvc.perform(post("/webauthn/authenticate/options").session(session).with(csrf()))
+                .andExpect(status().isOk());
+        String body =
+                mvc.perform(
+                                post("/login/webauthn")
+                                        .session(session)
+                                        .with(csrf())
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(ASSERTION))
+                        .andExpect(status().isUnauthorized())
+                        .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                        .andExpect(jsonPath("$.error").value("unauthenticated"))
+                        .andReturn()
+                        .getResponse()
+                        .getContentAsString();
+
+        assertThat(body).doesNotContain("signature-check-failed-detail");
     }
 }

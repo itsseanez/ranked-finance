@@ -5,6 +5,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.csrf.CsrfException;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
@@ -27,6 +28,19 @@ public class ProblemSecurityHandlers {
         return (request, response, ex) ->
                 ApiProblems.write(
                         response, ErrorCode.UNAUTHENTICATED, "Sign in to continue.", json);
+    }
+
+    /**
+     * A refused sign-in (a passkey the relying party rejected). The detail is fixed: why it failed
+     * stays on the server.
+     */
+    public AuthenticationFailureHandler signInFailureHandler() {
+        return (request, response, ex) ->
+                ApiProblems.write(
+                        response,
+                        ErrorCode.UNAUTHENTICATED,
+                        "That passkey couldn't sign you in.",
+                        json);
     }
 
     /**

@@ -49,7 +49,7 @@ public class LastPasskeyGuard {
                 if (DELETE_PASSKEY.matches(request) && !firstRunSetup.mayRemovePasskey()) {
                     ApiProblems.write(
                             response,
-                            ErrorCode.CONFLICT,
+                            ErrorCode.LAST_PASSKEY,
                             "You can't delete your only passkey. Add another one first.",
                             json);
                     return;

@@ -85,7 +85,8 @@ public class SecurityConfig {
                                                         passkeyOperations,
                                                         userDetailsService,
                                                         ownerSignIn,
-                                                        eventPublisher))
+                                                        eventPublisher,
+                                                        problems))
                                         // Its delete button would bypass LastPasskeyGuard's rule.
                                         .disableDefaultRegistrationPage(true))
                 // Same spot Spring puts WebAuthnRegistrationFilter; added first, so it runs just
@@ -123,7 +124,8 @@ public class SecurityConfig {
             WebAuthnRelyingPartyOperations passkeyOperations,
             UserDetailsService userDetailsService,
             OwnerSignIn ownerSignIn,
-            ObjectProvider<AuthenticationEventPublisher> eventPublisher) {
+            ObjectProvider<AuthenticationEventPublisher> eventPublisher,
+            ProblemSecurityHandlers problems) {
         // The explicit type argument is what Spring reads to call this only for that filter.
         return new ObjectPostProcessor<WebAuthnAuthenticationFilter>() {
             @Override
@@ -136,6 +138,8 @@ public class SecurityConfig {
                 filter.setAuthenticationManager(
                         request ->
                                 ownerSignIn.signedIn(passkeyCheck.authenticate(request).getName()));
+                // A refused passkey answers with a 401 problem detail, like every other 401.
+                filter.setAuthenticationFailureHandler(problems.signInFailureHandler());
                 return filter;
             }
         };

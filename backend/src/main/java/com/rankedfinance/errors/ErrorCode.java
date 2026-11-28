@@ -18,7 +18,10 @@ public enum ErrorCode {
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "validation_failed"),
     CONFLICT(HttpStatus.CONFLICT, "conflict"),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "method_not_allowed"),
-    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "internal_error");
+    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "internal_error"),
+    // Shipped in 0.1.0, so kept (codes are never removed).
+    LAST_PASSKEY(HttpStatus.CONFLICT, "last_passkey"),
+    OWNER_MISMATCH(HttpStatus.CONFLICT, "owner_mismatch");
 
     private final HttpStatus status;
     private final String code;

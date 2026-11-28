@@ -48,7 +48,7 @@ class SetupController {
                             ErrorCode.INVALID_SETUP_CODE, "That setup code isn't right.");
             case FirstRunSetup.OwnerMismatch mismatch ->
                     throw new ApiException(
-                            ErrorCode.CONFLICT,
+                            ErrorCode.OWNER_MISMATCH,
                             "OWNER_EMAIL doesn't match the owner already on this server.");
             case FirstRunSetup.Opened opened -> {
                 setupSession.start(opened.email(), request, response);

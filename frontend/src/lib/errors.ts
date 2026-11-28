@@ -21,6 +21,9 @@ export const errorMessages: Record<ErrorCode, string> = {
   conflict: "That change couldn't be made. Reload the page and try again.",
   method_not_allowed: "That action isn't supported.",
   internal_error: "Something went wrong on our end. Try again.",
+  last_passkey: "You can't delete your only passkey. Add another one first.",
+  owner_mismatch:
+    "This server is set up for a different owner email. Check OWNER_EMAIL.",
 };
 
 function isErrorCode(code: string): code is ErrorCode {
