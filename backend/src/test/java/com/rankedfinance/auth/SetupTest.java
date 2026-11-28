@@ -90,7 +90,11 @@ class SetupTest {
                                 .with(owner())
                                 .with(csrf()))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").value("last_passkey"));
+                .andExpect(jsonPath("$.error").value("conflict"))
+                .andExpect(
+                        jsonPath("$.detail")
+                                .value(
+                                        "You can't delete your only passkey. Add another one first."));
 
         assertThat(credentials.findByCredentialId(passkey.getCredentialId())).isNotNull();
         setup(SETUP_CODE).andExpect(jsonPath("$.error").value("setup_closed"));
@@ -155,7 +159,11 @@ class SetupTest {
 
         setup(SETUP_CODE)
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.error").value("owner_mismatch"));
+                .andExpect(jsonPath("$.error").value("conflict"))
+                .andExpect(
+                        jsonPath("$.detail")
+                                .value(
+                                        "OWNER_EMAIL doesn't match the owner already on this server."));
     }
 
     private static RequestPostProcessor owner() {

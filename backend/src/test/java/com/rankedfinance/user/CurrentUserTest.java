@@ -60,6 +60,7 @@ class CurrentUserTest {
         TestOwner.create(users);
 
         mvc.perform(get("/api/v1/me").with(user(TestOwner.EMAIL).roles(Roles.OWNER)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("forbidden"));
     }
 }

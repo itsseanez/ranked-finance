@@ -1,10 +1,9 @@
 package com.rankedfinance.auth;
 
-import com.rankedfinance.common.ApiProblems;
+import com.rankedfinance.errors.ApiException;
+import com.rankedfinance.errors.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -37,23 +36,19 @@ class SetupController {
     }
 
     @PostMapping
-    ResponseEntity<ProblemDetail> setup(
+    ResponseEntity<Void> setup(
             @RequestBody SetupRequest body,
             HttpServletRequest request,
             HttpServletResponse response) {
         return switch (firstRunSetup.start(body.code())) {
             case FirstRunSetup.Closed closed ->
-                    ApiProblems.response(
-                            HttpStatus.FORBIDDEN, "setup_closed", "This app is already set up.");
+                    throw new ApiException(ErrorCode.SETUP_CLOSED, "This app is already set up.");
             case FirstRunSetup.WrongCode wrongCode ->
-                    ApiProblems.response(
-                            HttpStatus.UNAUTHORIZED,
-                            "invalid_setup_code",
-                            "That setup code isn't right.");
+                    throw new ApiException(
+                            ErrorCode.INVALID_SETUP_CODE, "That setup code isn't right.");
             case FirstRunSetup.OwnerMismatch mismatch ->
-                    ApiProblems.response(
-                            HttpStatus.CONFLICT,
-                            "owner_mismatch",
+                    throw new ApiException(
+                            ErrorCode.CONFLICT,
                             "OWNER_EMAIL doesn't match the owner already on this server.");
             case FirstRunSetup.Opened opened -> {
                 setupSession.start(opened.email(), request, response);

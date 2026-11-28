@@ -4,6 +4,7 @@ import com.rankedfinance.auth.FirstRunSetup;
 import com.rankedfinance.auth.LastPasskeyGuard;
 import com.rankedfinance.auth.OwnerSignIn;
 import com.rankedfinance.auth.Roles;
+import com.rankedfinance.errors.ProblemSecurityHandlers;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,7 +18,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
-import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
 import org.springframework.security.web.context.DelegatingSecurityContextRepository;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -50,7 +50,8 @@ public class SecurityConfig {
             WebAuthnRelyingPartyOperations passkeyOperations,
             UserDetailsService userDetailsService,
             OwnerSignIn ownerSignIn,
-            ObjectProvider<AuthenticationEventPublisher> eventPublisher)
+            ObjectProvider<AuthenticationEventPublisher> eventPublisher,
+            ProblemSecurityHandlers problems)
             throws Exception {
         http.authorizeHttpRequests(
                         authorize ->
@@ -93,10 +94,15 @@ public class SecurityConfig {
                 // The SPA reads the XSRF-TOKEN cookie and sends it back in the X-XSRF-TOKEN header.
                 .csrf(csrf -> csrf.spa().csrfTokenRepository(csrfTokens))
                 .securityContext(context -> context.securityContextRepository(securityContexts))
+                // Every 401 and 403 is a problem detail with a code; the CSRF filter uses the same
+                // access-denied handler.
                 .exceptionHandling(
                         exceptions ->
-                                exceptions.authenticationEntryPoint(
-                                        new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                                exceptions
+                                        .authenticationEntryPoint(problems.entryPoint())
+                                        .accessDeniedHandler(
+                                                problems.accessDeniedHandler(
+                                                        Roles.authority(Roles.SETUP))))
                 .logout(
                         logout ->
                                 logout.logoutSuccessHandler(

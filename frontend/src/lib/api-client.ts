@@ -10,7 +10,10 @@ export class ApiError extends Error {
     this.body = body;
   }
 
-  /** The `error` code from a problem detail, such as "setup_closed". */
+  /**
+   * The `error` code from a problem detail, such as "setup_closed". A plain string, not ErrorCode:
+   * a newer server may send codes this build doesn't know (ADR 0014). lib/errors.ts maps it.
+   */
   get code(): string | undefined {
     const body = this.body;
     if (

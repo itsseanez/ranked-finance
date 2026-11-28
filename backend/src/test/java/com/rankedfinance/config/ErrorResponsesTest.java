@@ -36,5 +36,9 @@ class ErrorResponsesTest {
                 HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
 
         assertThat(response.statusCode()).isEqualTo(403);
+        assertThat(response.headers().firstValue("Content-Type"))
+                .hasValueSatisfying(
+                        type -> assertThat(type).startsWith("application/problem+json"));
+        assertThat(response.body()).contains("\"error\":\"forbidden\"");
     }
 }

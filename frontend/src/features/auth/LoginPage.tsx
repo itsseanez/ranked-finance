@@ -10,15 +10,10 @@ import {
 } from "@/features/auth/passkey";
 import { meQueryKey, useMe } from "@/features/auth/use-me";
 import { ApiError, apiFetch, UnauthorizedError } from "@/lib/api-client";
+import { messageFor } from "@/lib/errors";
 
 const UNSUPPORTED =
   "This browser doesn't support passkeys. Try the latest Chrome, Safari, or Edge.";
-
-const SETUP_MESSAGES: Record<string, string> = {
-  invalid_setup_code:
-    "That setup code isn't right. If the server restarted, use the newest code in its log.",
-  setup_closed: "This app is already set up. Sign in with your passkey.",
-};
 
 function signInMessage(error: unknown): string {
   if (error instanceof PasskeyCancelledError)
@@ -33,9 +28,7 @@ function setupMessage(error: unknown): string {
   if (error instanceof PasskeyCancelledError)
     return "Passkey setup was cancelled. Try again.";
   if (error instanceof PasskeyUnsupportedError) return UNSUPPORTED;
-  if (error instanceof ApiError && error.code && SETUP_MESSAGES[error.code]) {
-    return SETUP_MESSAGES[error.code];
-  }
+  if (error instanceof ApiError && error.code) return messageFor(error);
   return "Setup didn't finish. Try again.";
 }
 

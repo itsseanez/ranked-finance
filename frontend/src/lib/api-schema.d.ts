@@ -43,24 +43,29 @@ export interface components {
         SetupRequest: {
             code?: string;
         };
-        ProblemDetail: {
-            /** Format: uri */
-            type?: string;
-            title?: string;
-            /** Format: int32 */
-            status?: number;
-            detail?: string;
-            /** Format: uri */
-            instance?: string;
-            properties?: {
-                [key: string]: unknown;
-            };
-        };
         MeResponse: {
             /** Format: uuid */
             id?: string;
             displayName?: string;
             email?: string;
+        };
+        /** @description An RFC 9457 problem detail with an error code (ADR 0014). */
+        ApiProblem: {
+            /** Format: uri */
+            type?: string;
+            title?: string;
+            /** Format: int32 */
+            status: number;
+            detail?: string;
+            /**
+             * @description Machine-readable code; clients must handle codes they don't know.
+             * @enum {string}
+             */
+            error: "unauthenticated" | "setup_incomplete" | "forbidden" | "setup_closed" | "setup_not_configured" | "invalid_setup_code" | "not_found" | "validation_failed" | "conflict" | "method_not_allowed" | "internal_error";
+            errors?: {
+                field: string;
+                message: string;
+            }[];
         };
     };
     responses: never;
@@ -89,8 +94,24 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
+                content?: never;
+            };
+            /** @description Client error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
                 content: {
-                    "*/*": components["schemas"]["ProblemDetail"];
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Server error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
                 };
             };
         };
@@ -111,6 +132,24 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Client error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Server error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
                 };
             };
         };
