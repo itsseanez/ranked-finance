@@ -6,7 +6,7 @@ This is a statement of direction and order, not a schedule. Milestones don't hav
 
 There are two releases. **v1 is the first demoable product**: the core loop (accounts, net worth, ranks, plan, AI) working end to end on Plaid Sandbox, manual accounts, and demo data. **1.0 is the first public, self-hostable release.** See the design doc's Releases section.
 
-Each milestone ends with software you can run, and each gets its own step-by-step plan, written when the milestone starts, so later plans can use what earlier ones taught you (such as how Plaid Sandbox actually behaves). Milestone 1's plan is already written: [`docs/plans/2026-11-18-m1-foundation.md`](docs/plans/2026-11-18-m1-foundation.md).
+Each milestone ends with software you can run, and each gets its own step-by-step plan, written when the milestone starts, so later plans can use what earlier ones taught you (such as how Plaid Sandbox actually behaves). Milestone 1's plan is already written: [`docs/plans/2026-11-18-m1-foundation.md`](docs/plans/2026-11-18-m1-foundation.md). Milestone 2 is planned in two parts: M2a ([`docs/plans/2026-11-28-m2a-providers-manual-accounts.md`](docs/plans/2026-11-28-m2a-providers-manual-accounts.md)) builds the normalized tables, token encryption, the least-privilege database user, and manual accounts, and ends with a Plaid Sandbox spike; M2b (Plaid Link, webhooks, sync, liabilities, reconnect) is planned from the spike's notes.
 
 ### v1: first demoable product
 
