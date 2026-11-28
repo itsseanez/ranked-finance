@@ -15,7 +15,9 @@ import org.springframework.stereotype.Component;
  * the ciphertext, and decrypting fails if any byte was changed or the key is wrong. Every value
  * gets a fresh random 12-byte nonce, so the same token never encrypts to the same bytes twice.
  *
- * <p>Stored layout: [key version: 1 byte][nonce: 12 bytes][ciphertext + tag].
+ * <p>Stored layout: [key version: 1 byte][nonce: 12 bytes][ciphertext + tag]. The version byte is
+ * passed to GCM as additional authenticated data (AAD): it isn't encrypted, but the tag covers it,
+ * so changing it makes decrypting fail.
  */
 @Component
 class AesGcmTokenCipher implements TokenCipher {
@@ -44,6 +46,7 @@ class AesGcmTokenCipher implements TokenCipher {
         try {
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(TAG_BITS, nonce));
+            cipher.updateAAD(new byte[] {(byte) keyVersion});
             byte[] encrypted = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
             byte[] stored = new byte[1 + NONCE_BYTES + encrypted.length];
             stored[0] = (byte) keyVersion;
@@ -70,6 +73,7 @@ class AesGcmTokenCipher implements TokenCipher {
                     Cipher.DECRYPT_MODE,
                     key,
                     new GCMParameterSpec(TAG_BITS, stored, 1, NONCE_BYTES));
+            cipher.updateAAD(new byte[] {stored[0]});
             byte[] plain =
                     cipher.doFinal(Arrays.copyOfRange(stored, 1 + NONCE_BYTES, stored.length));
             return new String(plain, StandardCharsets.UTF_8);

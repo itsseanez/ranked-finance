@@ -66,6 +66,20 @@ class AesGcmTokenCipherTest {
                 .hasMessageContaining("key version");
     }
 
+    // The version byte is authenticated (GCM additional data), so relabelling a value with another
+    // configured version fails even when that version's key is the same key.
+    @Test
+    void changedKeyVersionFailsEvenWithTheSameKey() {
+        String key = randomKey();
+        var version1 = new AesGcmTokenCipher(new EncryptionProperties(key, 1));
+        var version2 = new AesGcmTokenCipher(new EncryptionProperties(key, 2));
+        byte[] stored = version1.encrypt("token");
+        stored[0] = 2;
+        assertThatThrownBy(() -> version2.decrypt(stored))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Could not decrypt the value");
+    }
+
     @Test
     void refusesToWorkWithoutAKey() {
         var cipher = cipher("");
