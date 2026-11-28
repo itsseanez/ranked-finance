@@ -12,8 +12,6 @@ export const errorMessages: Record<ErrorCode, string> = {
   setup_incomplete: "Finish setting up your passkey first.",
   forbidden: "That request was blocked. Reload the page and try again.",
   setup_closed: "This app is already set up. Sign in with your passkey.",
-  setup_not_configured:
-    "Setup isn't configured on this server. Set SETUP_CODE and restart.",
   invalid_setup_code:
     "That setup code isn't right. If the server restarted, use the newest code in its log.",
   not_found: "That couldn't be found. It may have been deleted.",

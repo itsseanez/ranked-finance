@@ -16,7 +16,7 @@ Before this ADR, codes were free strings at each call site, Spring Security answ
 - Every exit uses that shape: controllers, Spring MVC's own exceptions, Spring Security's 401 and 403, and `/error`. Failures with only a status map by status (400 `validation_failed`, 401 `unauthenticated`, 403 `forbidden`, 404 `not_found`, 405 `method_not_allowed`, anything else `internal_error`). An unexpected exception is `internal_error` with a fixed detail; its message is logged, never sent.
 - `validation_failed` adds `errors: [{ field, message }]`.
 - The OpenAPI spec has one `ApiProblem` schema whose `error` is an enum of every code, attached as the `4XX` and `5XX` response of every operation, so the generated TypeScript types list the codes.
-- Codes are only ever added, never renamed or removed. The M1 codes `last_passkey` and `owner_mismatch`, shipped in 0.1.0, are kept for that reason. A new code ships with its message in the frontend's `lib/errors.ts` (the type check fails without one).
+- Codes are only ever added, never renamed or removed. The M1 codes `last_passkey` and `owner_mismatch`, shipped in 0.1.0, are kept for that reason. `setup_not_configured` was dropped instead: 0.1.0 had already removed it (ADR 0012), so it never shipped in a release and no client can depend on it. A new code ships with its message in the frontend's `lib/errors.ts` (the type check fails without one).
 - Clients must handle codes they don't know; the frontend falls back to a generic message.
 
 ## Consequences

@@ -12,7 +12,6 @@ public enum ErrorCode {
     SETUP_INCOMPLETE(HttpStatus.FORBIDDEN, "setup_incomplete"),
     FORBIDDEN(HttpStatus.FORBIDDEN, "forbidden"),
     SETUP_CLOSED(HttpStatus.FORBIDDEN, "setup_closed"),
-    SETUP_NOT_CONFIGURED(HttpStatus.FORBIDDEN, "setup_not_configured"),
     INVALID_SETUP_CODE(HttpStatus.UNAUTHORIZED, "invalid_setup_code"),
     NOT_FOUND(HttpStatus.NOT_FOUND, "not_found"),
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "validation_failed"),
